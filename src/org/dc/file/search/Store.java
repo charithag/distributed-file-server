@@ -1,6 +1,7 @@
 package org.dc.file.search;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class Store {
 
+    private static final Object LOCK = new Object();
     private static Store store;
     private static List<String> fileNames;
     private static volatile Map<String, Peer> peerMap;
@@ -26,6 +28,25 @@ public class Store {
                 fileCount--;
             }
         }
+        new Thread(() -> {
+            while (true) {
+                long timeStamp = Calendar.getInstance().getTimeInMillis();
+                synchronized (LOCK) {
+                    final String[] keys = {null};
+                    searchRequestMap.entrySet().stream().filter(entry -> timeStamp > entry.getValue().getTimeStamp() + (10 * 1000)).forEach(entry -> {
+                        keys[0] = entry.getKey();
+                    });
+                    for (String key : keys) {
+                        searchRequestMap.remove(key);
+                    }
+                }
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 
     public static Store getInstance() {
@@ -95,6 +116,17 @@ public class Store {
     }
 
     public boolean addSearchRequest(SearchRequest searchRequest) {
-        return searchRequestMap.put(searchRequest.getSearchId(), searchRequest) == null;
+        synchronized (LOCK) {
+            return searchRequestMap.put(searchRequest.getSearchId(), searchRequest) == null;
+        }
     }
+
+    public void displaySearchRequestsList() {
+        String list = "\n=========== Search Requests List ===========\n";
+        for (Map.Entry<String, SearchRequest> entry : searchRequestMap.entrySet()) {
+            list += "Peer: " + entry.getValue().getPeer().getKey() + " Key: " + entry.getValue().getSearchKey() + "\n";
+        }
+        System.out.println(list + "============================================");
+    }
+
 }

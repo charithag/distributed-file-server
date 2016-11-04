@@ -156,16 +156,16 @@ public class MessageUtils {
         peer = new Peer(data[2], Integer.parseInt(data[3]));
         SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(),
                                                         query.replace("\"", ""), hopCount, peer);
-        String resultMsg = "SEROK " + localPeer.getIp() + " " + localPeer.getPort() + " ";
         if (store.addSearchRequest(searchRequest)) {
+            String resultMsg = "SEROK " + localPeer.getIp() + " " + localPeer.getPort() + " " + hopCount + " ";
             if (--hopCount > 0) {
                 for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
                     Peer remotePeer = entry.getValue();
                     if (!remotePeer.getKey().equals(peer.getKey())) {
                         MessageUtils.sendMessage(remotePeer.getIp(),
                                                  remotePeer.getPort(),
-                                                 "SER " + peer.getIp() + " " + peer.getPort() + " " + query
-                                                 + " " + hopCount);
+                                                 "SER " + peer.getIp() + " " + peer.getPort() + " \"" + searchRequest.getSearchKey()
+                                                 + "\" " + hopCount);
                     }
                 }
             }
@@ -174,10 +174,11 @@ public class MessageUtils {
             for (String result : results) {
                 resultMsg += " \"" + result + "\"";
             }
+            sendMessage(peer.getIp(), peer.getPort(), resultMsg);
         } else {
-            resultMsg += "9998";
+
+            System.out.println("Ignoring duplicate request.");
         }
-        sendMessage(peer.getIp(), peer.getPort(), resultMsg);
     }
 
     private static void addToNeighboursList(String[] data) throws IOException {

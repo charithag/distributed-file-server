@@ -46,6 +46,9 @@ public class DCNode {
                                                  + " \"" + key + "\" 2");
                     }
                     break;
+                case "requests":
+                    Store.getInstance().displaySearchRequestsList();
+                    break;
                 default:
                     System.err.println("Invalid input");
             }
