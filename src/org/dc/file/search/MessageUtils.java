@@ -165,7 +165,8 @@ public class MessageUtils {
             System.err.println("Server error");
         } else if (peerCount < 9999) {
             System.err.println("Peer already registered");
-            sendMessage(Constants.BOOTSTRAP_SERVER, Constants.BOOTSTRAP_PORT, "UNREG " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
+            sendMessage(Constants.BOOTSTRAP_SERVER, Constants.BOOTSTRAP_PORT, "UNREG "
+                            + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
         }
     }
 

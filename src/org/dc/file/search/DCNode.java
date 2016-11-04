@@ -11,7 +11,7 @@ public class DCNode {
         long username = Calendar.getInstance().getTimeInMillis() % 1000000000;
         Peer localPeer = MessageUtils.init(username);
         MessageUtils.sendMessage(Constants.BOOTSTRAP_SERVER, Constants.BOOTSTRAP_PORT, "REG "
-                                                                                       + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
+                                     + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
         Scanner scanner = new Scanner(System.in);
         while (true) {
             String input = scanner.nextLine();
@@ -20,10 +20,10 @@ public class DCNode {
                     for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
                         Peer peer = entry.getValue();
                         MessageUtils.sendMessage(peer.getIp(), peer.getPort(), "LEAVE "
-                                                                               + localPeer.getIp() + " " + localPeer.getPort());
+                                                     + localPeer.getIp() + " " + localPeer.getPort());
                     }
                     MessageUtils.sendMessage(Constants.BOOTSTRAP_SERVER, Constants.BOOTSTRAP_PORT, "UNREG "
-                                                                                                   + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
+                                                 + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
                     break;
                 case "peers":
                     Store.getInstance().displayPeerList();
