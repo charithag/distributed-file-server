@@ -136,6 +136,9 @@ public class MessageUtils {
                     System.err.println("Leave failed");
                 }
                 break;
+            case "SER":
+                List<String> result = store.findInFiles(data[2]);
+                break;
         }
     }
 
