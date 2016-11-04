@@ -26,8 +26,9 @@ public class MessageUtils {
                     Socket connectionSocket = serverSocket.accept();
                     BufferedReader receivedData =
                             new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-                    String clientSentence = receivedData.readLine();
-                    System.out.println("Received: " + clientSentence);
+                    String message = receivedData.readLine();
+                    System.out.println("Received message: " + message);
+                    processMessage(message);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -43,24 +44,31 @@ public class MessageUtils {
         new Thread(() -> {
             try {
                 int length = message.length() + 5;
+                if (message.endsWith("\n")) {
+                    length--;
+                }
                 String payload = String.format("%04d", length) + " " + message;
                 Socket clientSocket = new Socket(destinationIp, destinationPort);
                 DataOutputStream toRemote = new DataOutputStream(clientSocket.getOutputStream());
                 BufferedReader fromRemote = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 toRemote.write(payload.getBytes());
-                System.out.println("REQUEST TO REMOTE: " + payload);
-                MessageUtils.processReply(fromRemote.readLine());
+                System.out.println("MESSAGE SENT: " + payload);
+                String response = fromRemote.readLine();
+                System.out.println("RESPONSE RECEIVED: " + response);
+                MessageUtils.processMessage(response);
                 if (clientSocket.isConnected()) {
                     clientSocket.close();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                Peer peer = new Peer(destinationIp, destinationPort);
+                System.err.println("Unable to connect with remote " + peer.getKey() + ". " + e.getMessage());
+                Store store = Store.getInstance();
+                store.removePeer(peer);
             }
         }).start();
     }
 
-    public static void processReply(String response) throws IOException {
-        System.out.println("RESPONSE RECEIVED: " + response);
+    private static void processMessage(String response) throws IOException {
         String[] data = response.split(" ");
         int length = Integer.parseInt(data[0]);
         if (length != response.length()) {
@@ -74,6 +82,21 @@ public class MessageUtils {
             case "UNROK":
                 System.out.println("******* Terminating Peer ********");
                 System.exit(0);
+                break;
+            case "JOIN":
+                Peer peer = new Peer(data[2], Integer.parseInt(data[3]));
+                Store store = Store.getInstance();
+                store.addPeer(peer);
+                store.displayPeerList();
+                sendMessage(peer.getIp(), peer.getPort(), "JOINOK 0\n");
+                break;
+            case "JOINOK":
+                if (data[2].equals("0")) {
+                    System.out.println("Successfully joined with a peer");
+                    Store.getInstance().displayPeerList();
+                } else {
+                    System.err.println("Join failed");
+                }
                 break;
         }
     }
