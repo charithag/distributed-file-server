@@ -4,9 +4,14 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class MessageUtils {
@@ -34,8 +39,22 @@ public class MessageUtils {
                 }
             }
         }).start();
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         InetAddress localIp = InetAddress.getLocalHost();
         String hostAddress = localIp.getHostAddress();
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface interf = interfaces.nextElement();
+            if (interf.isUp() && !interf.isLoopback()) {
+                List<InterfaceAddress> adrs = interf.getInterfaceAddresses();
+                for (InterfaceAddress adr : adrs) {
+                    InetAddress inadr = adr.getAddress();
+                    if (inadr instanceof Inet4Address) {
+                        hostAddress = inadr.getHostAddress();
+                        System.out.println("Updated host address: " + hostAddress);
+                    }
+                }
+            }
+        }
         localPeer = new Peer(hostAddress, serverSocket.getLocalPort());
         return localPeer;
     }
@@ -44,18 +63,20 @@ public class MessageUtils {
         new Thread(() -> {
             try {
                 int length = message.length() + 5;
-                if (message.endsWith("\n")) {
-                    length--;
-                }
                 String payload = String.format("%04d", length) + " " + message;
+                if (!Constants.BOOTSTRAP_SERVER.equals(destinationIp) && Constants.BOOTSTRAP_PORT != destinationPort) {
+                    payload += "\n";
+                }
                 Socket clientSocket = new Socket(destinationIp, destinationPort);
                 DataOutputStream toRemote = new DataOutputStream(clientSocket.getOutputStream());
                 BufferedReader fromRemote = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 toRemote.write(payload.getBytes());
                 System.out.println("MESSAGE SENT: " + payload);
                 String response = fromRemote.readLine();
-                System.out.println("RESPONSE RECEIVED: " + response);
-                MessageUtils.processMessage(response);
+                if (response != null) {
+                    System.out.println("RESPONSE RECEIVED: " + response);
+                    MessageUtils.processMessage(response);
+                }
                 if (clientSocket.isConnected()) {
                     clientSocket.close();
                 }
@@ -75,27 +96,44 @@ public class MessageUtils {
             System.err.println("Invalid length");
             return;
         }
+        Store store = Store.getInstance();
+        Peer peer;
         switch (data[1]) {
             case "REGOK":
                 addToNeighboursList(data);
                 break;
             case "UNROK":
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 System.out.println("******* Terminating Peer ********");
                 System.exit(0);
                 break;
             case "JOIN":
-                Peer peer = new Peer(data[2], Integer.parseInt(data[3]));
-                Store store = Store.getInstance();
+                peer = new Peer(data[2], Integer.parseInt(data[3]));
                 store.addPeer(peer);
-                store.displayPeerList();
-                sendMessage(peer.getIp(), peer.getPort(), "JOINOK 0\n");
+                sendMessage(peer.getIp(), peer.getPort(), "JOINOK 0");
                 break;
             case "JOINOK":
                 if (data[2].equals("0")) {
                     System.out.println("Successfully joined with a peer");
-                    Store.getInstance().displayPeerList();
                 } else {
                     System.err.println("Join failed");
+                }
+                break;
+            case "LEAVE":
+                peer = new Peer(data[2], Integer.parseInt(data[3]));
+                store = Store.getInstance();
+                store.removePeer(peer);
+                sendMessage(peer.getIp(), peer.getPort(), "LEAVEOK 0");
+                break;
+            case "LEAVEOK":
+                if (data[2].equals("0")) {
+                    System.out.println("Successfully disconnected form peer");
+                } else {
+                    System.err.println("Leave failed");
                 }
                 break;
         }
@@ -113,7 +151,7 @@ public class MessageUtils {
                 rnd2 = getRandom(peerCount) * 3;
             }
             Peer peer1 = new Peer(data[rnd1], Integer.parseInt(data[rnd1 + 1]));
-            String joinMsg = "JOIN " + localPeer.getIp() + " " + localPeer.getPort() + "\n";
+            String joinMsg = "JOIN " + localPeer.getIp() + " " + localPeer.getPort();
             sendMessage(peer1.getIp(), peer1.getPort(), joinMsg);
             store.addPeer(peer1);
             if (peerCount > 1) {
@@ -121,7 +159,6 @@ public class MessageUtils {
                 sendMessage(peer2.getIp(), peer2.getPort(), joinMsg);
                 store.addPeer(peer2);
             }
-            store.displayPeerList();
         } else if (peerCount == 9997) {
             System.err.println("Bootstrap server already filled");
         } else if (peerCount == 9998) {
