@@ -9,13 +9,14 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Store {
 
     private static Store store;
-    private volatile Map<String, Peer> peerMap;
-
-    private List<String> fileNames;
+    private static List<String> fileNames;
+    private static volatile Map<String, Peer> peerMap;
+    private static volatile Map<String, SearchRequest> searchRequestMap;
 
     private Store() {
         peerMap = new HashMap<>();
         fileNames = new ArrayList<>();
+        searchRequestMap = new HashMap<>();
         int fileCount = ThreadLocalRandom.current().nextInt(3, 5);
         while (fileCount > 0) {
             int fileIndex = ThreadLocalRandom.current().nextInt(0, Constants.FILES.length - 1);
@@ -91,5 +92,9 @@ public class Store {
             list += fileName + "\n";
         }
         System.out.println(list + "==================================");
+    }
+
+    public boolean addSearchRequest(SearchRequest searchRequest) {
+        return searchRequestMap.put(searchRequest.getSearchId(), searchRequest) == null;
     }
 }

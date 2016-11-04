@@ -10,8 +10,10 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class MessageUtils {
@@ -137,9 +139,45 @@ public class MessageUtils {
                 }
                 break;
             case "SER":
-                List<String> result = store.findInFiles(data[2]);
+                searchFile(response, data);
                 break;
         }
+    }
+
+    private static void searchFile(String response, String[] data) {
+        Store store = Store.getInstance();
+        Peer peer;
+        int hopCount = 2;
+        try {
+            hopCount = Integer.parseInt(data[data.length - 1]);
+        } catch (NumberFormatException ignored) {
+        }
+        String query = response.substring(response.indexOf('"'), response.lastIndexOf('"'));
+        peer = new Peer(data[2], Integer.parseInt(data[3]));
+        SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(),
+                                                        query.replace("\"", ""), hopCount, peer);
+        String resultMsg = "SEROK " + localPeer.getIp() + " " + localPeer.getPort() + " ";
+        if (store.addSearchRequest(searchRequest)) {
+            if (--hopCount > 0) {
+                for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
+                    Peer remotePeer = entry.getValue();
+                    if (!remotePeer.getKey().equals(peer.getKey())) {
+                        MessageUtils.sendMessage(remotePeer.getIp(),
+                                                 remotePeer.getPort(),
+                                                 "SER " + peer.getIp() + " " + peer.getPort() + " " + query
+                                                 + " " + hopCount);
+                    }
+                }
+            }
+            List<String> results = store.findInFiles(searchRequest.getSearchKey());
+            resultMsg += results.size();
+            for (String result : results) {
+                resultMsg += " \"" + result + "\"";
+            }
+        } else {
+            resultMsg += "9998";
+        }
+        sendMessage(peer.getIp(), peer.getPort(), resultMsg);
     }
 
     private static void addToNeighboursList(String[] data) throws IOException {
