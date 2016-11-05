@@ -249,11 +249,11 @@ public class MessageUtils {
     }
 
     private static void addToNeighboursList(String[] data) throws IOException {
+        Store store = Store.getInstance();
         int peerCount = Integer.parseInt(data[2]);
         if (peerCount == 0) {
             System.out.println("There is no any peers in the network yet.");
         } else if (peerCount < 9997) {
-            Store store = Store.getInstance();
             int rnd1 = getRandom(peerCount) * 3;
             int rnd2 = getRandom(peerCount) * 3;
             while (rnd1 == rnd2 && peerCount > 1) {
@@ -274,15 +274,15 @@ public class MessageUtils {
             System.err.println("Server error");
         } else if (peerCount < 9999) {
             System.err.println("Peer already registered");
-            sendTCPMessage(Constants.BOOTSTRAP_SERVER,
-                           Constants.BOOTSTRAP_PORT,
+            sendTCPMessage(store.getServerIp(),
+                           store.getServerPort(),
                            "UNREG " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException ignored) {
             }
-            sendTCPMessage(Constants.BOOTSTRAP_SERVER,
-                           Constants.BOOTSTRAP_PORT,
+            sendTCPMessage(store.getServerIp(),
+                           store.getServerPort(),
                            "REG " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
         }
     }

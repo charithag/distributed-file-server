@@ -16,6 +16,8 @@ public class Store {
     private static volatile Map<String, SearchRequest> searchRequestMap;
     private volatile SearchRequest mySearchRequest;
     private volatile List<SearchResult> searchResults;
+    private int serverPort;
+    private String serverIp;
 
     private Store() {
         peerMap = new HashMap<>();
@@ -56,6 +58,23 @@ public class Store {
             store = new Store();
         }
         return store;
+    }
+
+    public String getServerIp(){
+        return serverIp;
+    }
+
+    public void setServerIp(String ip){
+        this.serverIp = ip;
+    }
+
+    public int getServerPort(){
+
+        return serverPort;
+    }
+
+    public void setServerPort(int port){
+        this.serverPort = port;
     }
 
     public SearchRequest getMySearchRequest() {

@@ -11,13 +11,19 @@ public class DCNode {
 
     public static void main(String[] args) throws IOException {
         Store store = Store.getInstance();
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Input the Bootstrap Server IP: ");
+        store.setServerIp(scanner.nextLine());
+        System.out.print("Input the Bootstrap Server Port: ");
+        store.setServerPort(scanner.nextInt());
+        scanner.nextLine();
         store.displayFilesList();
         long username = Calendar.getInstance().getTimeInMillis() % 1000000000;
         Peer localPeer = MessageUtils.init(username);
-        MessageUtils.sendTCPMessage(Constants.BOOTSTRAP_SERVER,
-                                    Constants.BOOTSTRAP_PORT,
+        MessageUtils.sendTCPMessage(store.getServerIp(),
+                                    store.getServerPort(),
                                     "REG " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
-        Scanner scanner = new Scanner(System.in);
         while (true) {
             String input = scanner.nextLine();
             switch (input) {
@@ -28,8 +34,8 @@ public class DCNode {
                                                     peer.getPort(),
                                                     "LEAVE " + localPeer.getIp() + " " + localPeer.getPort());
                     }
-                    MessageUtils.sendTCPMessage(Constants.BOOTSTRAP_SERVER,
-                                                Constants.BOOTSTRAP_PORT,
+                    MessageUtils.sendTCPMessage(store.getServerIp(),
+                                                store.getServerPort(),
                                                 "UNREG " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
                     break;
                 case "peers":
