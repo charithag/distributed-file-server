@@ -13,6 +13,8 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.List;
@@ -174,7 +176,12 @@ public class MessageUtils {
                 searchFile(response, data);
                 break;
             case "SEROK":
-
+                int resultCode = Integer.parseInt(data[2]);
+                if (resultCode < 9998) {
+                    addSearchResult(response, data);
+                } else {
+                    System.err.println("Error occurred while searching for files. Code: " + resultCode);
+                }
                 break;
             default:
                 System.err.println("Invalid operation");
@@ -189,12 +196,11 @@ public class MessageUtils {
             hopCount = Integer.parseInt(data[data.length - 1]);
         } catch (NumberFormatException ignored) {
         }
-        String query = response.substring(response.indexOf('"'), response.lastIndexOf('"'));
+        String query = response.substring(response.indexOf('"') + 1, response.lastIndexOf('"'));
         peer = new Peer(data[2], Integer.parseInt(data[3]));
-        SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(),
-                                                        query.replace("\"", ""), hopCount, peer);
+        SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(), query, hopCount, peer);
+        String resultMsg = localPeer.getIp() + " " + localPeer.getPort() + " " + --hopCount + " ";
         if (store.addSearchRequest(searchRequest)) {
-            String resultMsg = "SEROK " + localPeer.getIp() + " " + localPeer.getPort() + " " + --hopCount + " ";
             if (hopCount > 0) {
                 for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
                     Peer remotePeer = entry.getValue();
@@ -207,14 +213,40 @@ public class MessageUtils {
                 }
             }
             List<String> results = store.findInFiles(searchRequest.getSearchKey());
-            resultMsg += results.size();
+            resultMsg = results.size() + " " + resultMsg;
             for (String result : results) {
                 resultMsg += " \"" + result + "\"";
             }
-            sendUDPMessage(peer.getIp(), peer.getPort(), resultMsg);
         } else {
+            resultMsg = "9998 " + resultMsg;
             System.out.println("Ignoring duplicate request.");
         }
+        sendUDPMessage(peer.getIp(), peer.getPort(), "SEROK " + resultMsg);
+    }
+
+    private static void addSearchResult(String response, String[] data) {
+        Store store = Store.getInstance();
+        String key = store.getMySearchRequest().getSearchKey();
+        int resultsCount = Integer.parseInt(data[2]);
+        List<String> results = new ArrayList<>();
+        if (resultsCount > 0) {
+            String fileNamesString = response.substring(response.indexOf('"'), response.lastIndexOf('"') + 1);
+            results = Arrays.asList(fileNamesString.split("\" \""));
+            if (resultsCount != results.size()) {
+                System.err.println("Invalid results response");
+                return;
+            }
+            for (String result : results) {
+                if (!result.contains(key)) {
+                    System.err.println("Ignoring obsolete search result");
+                    return;
+                }
+            }
+        }
+        Peer peer = new Peer(data[3], Integer.parseInt(data[4]));
+        int hopCount = store.getMySearchRequest().getHopCount() - Integer.parseInt(data[5]);
+        SearchResult searchResult = new SearchResult(key, peer, hopCount, results);
+        store.addSearchResult(searchResult);
     }
 
     private static void addToNeighboursList(String[] data) throws IOException {

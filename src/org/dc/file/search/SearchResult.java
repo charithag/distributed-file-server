@@ -2,19 +2,26 @@ package org.dc.file.search;
 
 import java.util.List;
 
-public class SearchResults {
+public class SearchResult {
 
-    private String key;
+    private String searchKey;
     private Peer peerWithResults;
     private int hopCount;
     private List<String> results;
 
-    public String getKey() {
-        return key;
+    public SearchResult(String searchKey, Peer peerWithResults, int hopCount, List<String> results) {
+        this.searchKey = searchKey;
+        this.peerWithResults = peerWithResults;
+        this.hopCount = hopCount;
+        this.results = results;
     }
 
-    public void setKey(String key) {
-        this.key = key;
+    public String getSearchKey() {
+        return searchKey;
+    }
+
+    public void setSearchKey(String searchKey) {
+        this.searchKey = searchKey;
     }
 
     public Peer getPeerWithResults() {

@@ -14,7 +14,8 @@ public class Store {
     private static List<String> fileNames;
     private static volatile Map<String, Peer> peerMap;
     private static volatile Map<String, SearchRequest> searchRequestMap;
-    private static volatile SearchRequest mySearchRequest;
+    private volatile SearchRequest mySearchRequest;
+    private volatile List<SearchResult> searchResults;
 
     private Store() {
         peerMap = new HashMap<>();
@@ -57,12 +58,24 @@ public class Store {
         return store;
     }
 
-    public static SearchRequest getMySearchRequest() {
+    public SearchRequest getMySearchRequest() {
         return mySearchRequest;
     }
 
-    public static void setMySearchRequest(SearchRequest mySearchRequest) {
-        Store.mySearchRequest = mySearchRequest;
+    public void setMySearchRequest(SearchRequest mySearchRequest) {
+        this.mySearchRequest = mySearchRequest;
+    }
+
+    public List<SearchResult> getSearchResults() {
+        return searchResults;
+    }
+
+    public void setSearchResults(List<SearchResult> searchResults) {
+        this.searchResults = searchResults;
+    }
+
+    public void addSearchResult(SearchResult searchResult) {
+        searchResults.add(searchResult);
     }
 
     public Map<String, Peer> getPeerMap() {
@@ -136,6 +149,22 @@ public class Store {
             list += "Peer: " + entry.getValue().getPeer().getKey() + " Key: " + entry.getValue().getSearchKey() + "\n";
         }
         System.out.println(list + "============================================");
+    }
+
+    public void displaySearchResults() {
+        String list = "\n=========== Search Results ===========\n" +
+                      "Search Key:" + mySearchRequest.getSearchKey()
+                      + "\nPeer\t\t\t|Hops\t|Files";
+        for (SearchResult result : searchResults) {
+            Peer peer = result.getPeerWithResults();
+            list += peer.getIp() + ":" + peer.getPort() + "\t";
+            list += result.getHopCount() + "\t";
+            for (String fileName : result.getResults()) {
+                list += fileName + " ";
+            }
+            list += "\n";
+        }
+        System.out.println(list + "====================================");
     }
 
 }
