@@ -198,9 +198,9 @@ public class MessageUtils {
         }
         String query = response.substring(response.indexOf('"') + 1, response.lastIndexOf('"'));
         peer = new Peer(data[2], Integer.parseInt(data[3]));
-        SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(), query, hopCount, peer);
-        String resultMsg = localPeer.getIp() + " " + localPeer.getPort() + " " + --hopCount + " ";
+        SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(), query, --hopCount, peer);
         if (store.addSearchRequest(searchRequest)) {
+            String resultMsg = localPeer.getIp() + " " + localPeer.getPort() + " " + hopCount + " ";
             if (hopCount > 0) {
                 for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
                     Peer remotePeer = entry.getValue();
@@ -215,13 +215,12 @@ public class MessageUtils {
             List<String> results = store.findInFiles(searchRequest.getSearchKey());
             resultMsg = results.size() + " " + resultMsg;
             for (String result : results) {
-                resultMsg += " \"" + result + "\"";
+                resultMsg += " " + result;
             }
+            sendUDPMessage(peer.getIp(), peer.getPort(), "SEROK " + resultMsg);
         } else {
-            resultMsg = "9998 " + resultMsg;
             System.out.println("Ignoring duplicate request.");
         }
-        sendUDPMessage(peer.getIp(), peer.getPort(), "SEROK " + resultMsg);
     }
 
     private static void addSearchResult(String response, String[] data) {
@@ -237,7 +236,7 @@ public class MessageUtils {
                 return;
             }
             for (String result : results) {
-                if (!result.contains(key)) {
+                if (!result.toUpperCase().contains(key.toUpperCase())) {
                     System.err.println("Ignoring obsolete search result");
                     return;
                 }

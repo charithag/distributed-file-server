@@ -118,7 +118,7 @@ public class Store {
                             }
                         }
                         if (hasPart) {
-                            results.add(fileName);
+                            results.add("\"" + fileName + "\"");
                             list += fileName + "\n";
                         }
                     }
@@ -154,11 +154,12 @@ public class Store {
     public void displaySearchResults() {
         String list = "\n=========== Search Results ===========\n" +
                       "Search Key:" + mySearchRequest.getSearchKey()
-                      + "\nPeer\t\t\t|Hops\t|Files";
+                      + "\nPeer\t\t\t\t\t|Hops\t|Count\t|Files\n";
         for (SearchResult result : searchResults) {
             Peer peer = result.getPeerWithResults();
-            list += peer.getIp() + ":" + peer.getPort() + "\t";
-            list += result.getHopCount() + "\t";
+            list += peer.getIp() + ":" + peer.getPort() + "\t ";
+            list += result.getHopCount() + "\t\t ";
+            list += result.getResults().size() + "\t\t ";
             for (String fileName : result.getResults()) {
                 list += fileName + " ";
             }
