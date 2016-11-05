@@ -14,6 +14,7 @@ public class Store {
     private static List<String> fileNames;
     private static volatile Map<String, Peer> peerMap;
     private static volatile Map<String, SearchRequest> searchRequestMap;
+    private static volatile SearchRequest mySearchRequest;
 
     private Store() {
         peerMap = new HashMap<>();
@@ -54,6 +55,14 @@ public class Store {
             store = new Store();
         }
         return store;
+    }
+
+    public static SearchRequest getMySearchRequest() {
+        return mySearchRequest;
+    }
+
+    public static void setMySearchRequest(SearchRequest mySearchRequest) {
+        Store.mySearchRequest = mySearchRequest;
     }
 
     public Map<String, Peer> getPeerMap() {

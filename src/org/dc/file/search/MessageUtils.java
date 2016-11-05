@@ -4,12 +4,15 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.List;
@@ -25,20 +28,28 @@ public class MessageUtils {
     }
 
     public static Peer init(long username) throws IOException {
-        ServerSocket serverSocket = new ServerSocket(0);
         MessageUtils.username = username;
+        final int port = new ServerSocket(0).getLocalPort();
         new Thread(() -> {
-            while (true) {
-                try {
-                    Socket connectionSocket = serverSocket.accept();
-                    BufferedReader receivedData =
-                            new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-                    String message = receivedData.readLine();
-                    System.out.println("Received message: " + message);
-                    processMessage(message);
-                } catch (IOException e) {
-                    e.printStackTrace();
+            DatagramSocket serverSocket = null;
+            try {
+                serverSocket = new DatagramSocket(port);
+                byte[] receiveData;
+                while (true) {
+                    try {
+                        receiveData = new byte[1024];
+                        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                        serverSocket.receive(receivePacket);
+                        String message = new String(receivePacket.getData());
+                        System.out.println("UDP MESSAGE RECEIVED FROM: " + receivePacket.getAddress().getHostAddress() + ":"
+                                           + receivePacket.getPort() + " MESSAGE: " + message);
+                        processMessage(message);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
+            } catch (SocketException e) {
+                e.printStackTrace();
             }
         }).start();
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -57,31 +68,51 @@ public class MessageUtils {
                 }
             }
         }
-        localPeer = new Peer(hostAddress, serverSocket.getLocalPort());
+        localPeer = new Peer(hostAddress, port);
         return localPeer;
     }
 
-    public static void sendMessage(final String destinationIp, final int destinationPort, final String message) {
+    public static void sendTCPMessage(final String destinationIp, final int destinationPort, final String message) {
         new Thread(() -> {
             try {
                 int length = message.length() + 5;
                 String payload = String.format("%04d", length) + " " + message;
-                if (!Constants.BOOTSTRAP_SERVER.equals(destinationIp) && Constants.BOOTSTRAP_PORT != destinationPort) {
-                    payload += "\n";
-                }
                 Socket clientSocket = new Socket(destinationIp, destinationPort);
                 DataOutputStream toRemote = new DataOutputStream(clientSocket.getOutputStream());
                 BufferedReader fromRemote = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 toRemote.write(payload.getBytes());
-                System.out.println("MESSAGE SENT: " + payload);
+                System.out.println("TCP MESSAGE SENT TO: " + destinationIp + ":" + destinationPort
+                                   + " MESSAGE: " + payload);
                 String response = fromRemote.readLine();
                 if (response != null) {
-                    System.out.println("RESPONSE RECEIVED: " + response);
+                    System.out.println("TCP RESPONSE RECEIVED FROM: " + destinationIp + ":" + destinationPort
+                                       + " MESSAGE: " + response);
                     MessageUtils.processMessage(response);
                 }
                 if (clientSocket.isConnected()) {
                     clientSocket.close();
                 }
+            } catch (IOException e) {
+                System.err.println("Unable to connect with bootstrap server at " + destinationIp
+                                   + ":" + destinationPort + ". " + e.getMessage());
+
+            }
+        }).start();
+    }
+
+    public static void sendUDPMessage(final String destinationIp, final int destinationPort, final String message) {
+        new Thread(() -> {
+            try {
+                int length = message.length() + 5;
+                String payload = String.format("%04d", length) + " " + message;
+                DatagramSocket clientSocket = new DatagramSocket();
+                InetAddress IPAddress = InetAddress.getByName(destinationIp);
+                System.out.println("UDP MESSAGE SENT TO: " + destinationIp + ":" + destinationPort
+                                   + " MESSAGE: " + payload);
+                byte[] sendData = payload.getBytes();
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, destinationPort);
+                clientSocket.send(sendPacket);
+                clientSocket.close();
             } catch (IOException e) {
                 Peer peer = new Peer(destinationIp, destinationPort);
                 System.err.println("Unable to connect with remote " + peer.getKey() + ". " + e.getMessage());
@@ -92,12 +123,13 @@ public class MessageUtils {
     }
 
     private static void processMessage(String response) throws IOException {
-        String[] data = response.split(" ");
-        int length = Integer.parseInt(data[0]);
-        if (length != response.length()) {
+        int length = Integer.parseInt(response.substring(0, 4));
+        if (length > response.length()) {
             System.err.println("Invalid length");
             return;
         }
+        response = response.substring(0, length);
+        String[] data = response.split(" ");
         Store store = Store.getInstance();
         Peer peer;
         switch (data[1]) {
@@ -116,7 +148,7 @@ public class MessageUtils {
             case "JOIN":
                 peer = new Peer(data[2], Integer.parseInt(data[3]));
                 store.addPeer(peer);
-                sendMessage(peer.getIp(), peer.getPort(), "JOINOK 0");
+                sendUDPMessage(peer.getIp(), peer.getPort(), "JOINOK 0");
                 break;
             case "JOINOK":
                 if (data[2].equals("0")) {
@@ -129,7 +161,7 @@ public class MessageUtils {
                 peer = new Peer(data[2], Integer.parseInt(data[3]));
                 store = Store.getInstance();
                 store.removePeer(peer);
-                sendMessage(peer.getIp(), peer.getPort(), "LEAVEOK 0");
+                sendUDPMessage(peer.getIp(), peer.getPort(), "LEAVEOK 0");
                 break;
             case "LEAVEOK":
                 if (data[2].equals("0")) {
@@ -141,6 +173,11 @@ public class MessageUtils {
             case "SER":
                 searchFile(response, data);
                 break;
+            case "SEROK":
+
+                break;
+            default:
+                System.err.println("Invalid operation");
         }
     }
 
@@ -157,15 +194,15 @@ public class MessageUtils {
         SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(),
                                                         query.replace("\"", ""), hopCount, peer);
         if (store.addSearchRequest(searchRequest)) {
-            String resultMsg = "SEROK " + localPeer.getIp() + " " + localPeer.getPort() + " " + hopCount + " ";
-            if (--hopCount > 0) {
+            String resultMsg = "SEROK " + localPeer.getIp() + " " + localPeer.getPort() + " " + --hopCount + " ";
+            if (hopCount > 0) {
                 for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
                     Peer remotePeer = entry.getValue();
                     if (!remotePeer.getKey().equals(peer.getKey())) {
-                        MessageUtils.sendMessage(remotePeer.getIp(),
-                                                 remotePeer.getPort(),
-                                                 "SER " + peer.getIp() + " " + peer.getPort() + " \"" + searchRequest.getSearchKey()
-                                                 + "\" " + hopCount);
+                        MessageUtils.sendUDPMessage(remotePeer.getIp(),
+                                                    remotePeer.getPort(),
+                                                    "SER " + peer.getIp() + " " + peer.getPort() + " \"" + searchRequest.getSearchKey()
+                                                    + "\" " + hopCount);
                     }
                 }
             }
@@ -174,9 +211,8 @@ public class MessageUtils {
             for (String result : results) {
                 resultMsg += " \"" + result + "\"";
             }
-            sendMessage(peer.getIp(), peer.getPort(), resultMsg);
+            sendUDPMessage(peer.getIp(), peer.getPort(), resultMsg);
         } else {
-
             System.out.println("Ignoring duplicate request.");
         }
     }
@@ -194,11 +230,11 @@ public class MessageUtils {
             }
             Peer peer1 = new Peer(data[rnd1], Integer.parseInt(data[rnd1 + 1]));
             String joinMsg = "JOIN " + localPeer.getIp() + " " + localPeer.getPort();
-            sendMessage(peer1.getIp(), peer1.getPort(), joinMsg);
+            sendUDPMessage(peer1.getIp(), peer1.getPort(), joinMsg);
             store.addPeer(peer1);
             if (peerCount > 1) {
                 Peer peer2 = new Peer(data[rnd2], Integer.parseInt(data[rnd2 + 1]));
-                sendMessage(peer2.getIp(), peer2.getPort(), joinMsg);
+                sendUDPMessage(peer2.getIp(), peer2.getPort(), joinMsg);
                 store.addPeer(peer2);
             }
         } else if (peerCount == 9997) {
@@ -207,8 +243,16 @@ public class MessageUtils {
             System.err.println("Server error");
         } else if (peerCount < 9999) {
             System.err.println("Peer already registered");
-            sendMessage(Constants.BOOTSTRAP_SERVER, Constants.BOOTSTRAP_PORT, "UNREG "
-                            + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
+            sendTCPMessage(Constants.BOOTSTRAP_SERVER,
+                           Constants.BOOTSTRAP_PORT,
+                           "UNREG " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) {
+            }
+            sendTCPMessage(Constants.BOOTSTRAP_SERVER,
+                           Constants.BOOTSTRAP_PORT,
+                           "REG " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
         }
     }
 
