@@ -23,17 +23,19 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class MessageUtils {
 
-    private static long username;
+    private static String username;
     private static Peer localPeer;
 
     private MessageUtils() {
     }
 
-    public static Peer init(long username) throws IOException {
+    public static Peer init(String username) throws IOException {
         MessageUtils.username = username;
-        final int port = new ServerSocket(0).getLocalPort();
+        ServerSocket tempSocket = new ServerSocket(0);
+        final int port = tempSocket.getLocalPort();
+        tempSocket.close();
         new Thread(() -> {
-            DatagramSocket serverSocket = null;
+            DatagramSocket serverSocket;
             try {
                 serverSocket = new DatagramSocket(port);
                 byte[] receiveData;
@@ -200,7 +202,6 @@ public class MessageUtils {
         peer = new Peer(data[2], Integer.parseInt(data[3]));
         SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(), query, --hopCount, peer);
         if (store.addSearchRequest(searchRequest)) {
-            String resultMsg = localPeer.getIp() + " " + localPeer.getPort() + " " + hopCount + " ";
             if (hopCount > 0) {
                 for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
                     Peer remotePeer = entry.getValue();
@@ -213,11 +214,13 @@ public class MessageUtils {
                 }
             }
             List<String> results = store.findInFiles(searchRequest.getSearchKey());
-            resultMsg = results.size() + " " + resultMsg;
-            for (String result : results) {
-                resultMsg += " " + result;
+            if (!results.isEmpty()) {
+                String resultMsg = results.size() + " " + localPeer.getIp() + " " + localPeer.getPort() + " " + hopCount + " ";
+                for (String result : results) {
+                    resultMsg += " " + result;
+                }
+                sendUDPMessage(peer.getIp(), peer.getPort(), "SEROK " + resultMsg);
             }
-            sendUDPMessage(peer.getIp(), peer.getPort(), "SEROK " + resultMsg);
         } else {
             System.out.println("Ignoring duplicate request.");
         }

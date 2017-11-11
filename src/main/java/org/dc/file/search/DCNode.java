@@ -6,10 +6,17 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class DCNode {
 
     public static void main(String[] args) throws IOException {
+        ScheduledExecutorService scheduler
+                = Executors.newSingleThreadScheduledExecutor();
+
         Store store = Store.getInstance();
         Scanner scanner = new Scanner(System.in);
 
@@ -19,11 +26,11 @@ public class DCNode {
         store.setServerPort(scanner.nextInt());
         scanner.nextLine();
         store.displayFilesList();
-        long username = Calendar.getInstance().getTimeInMillis() % 1000000000;
-        Peer localPeer = MessageUtils.init(username);
+        String uuid = UUID.randomUUID().toString();
+        Peer localPeer = MessageUtils.init(uuid);
         MessageUtils.sendTCPMessage(store.getServerIp(),
                                     store.getServerPort(),
-                                    "REG " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
+                                    "REG " + localPeer.getIp() + " " + localPeer.getPort() + " " + uuid);
         while (true) {
             String input = scanner.nextLine();
             switch (input) {
@@ -36,7 +43,7 @@ public class DCNode {
                     }
                     MessageUtils.sendTCPMessage(store.getServerIp(),
                                                 store.getServerPort(),
-                                                "UNREG " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
+                                                "UNREG " + localPeer.getIp() + " " + localPeer.getPort() + " " + uuid);
                     break;
                 case "peers":
                     store.displayPeerList();
@@ -53,8 +60,10 @@ public class DCNode {
                     store.addSearchRequest(searchRequest);
                     store.setSearchResults(new ArrayList<>());
                     List<String> results = Store.getInstance().findInFiles(searchRequest.getSearchKey());
-                    SearchResult searchResult = new SearchResult(key, localPeer, 0, results);
-                    store.addSearchResult(searchResult);
+                    if (!results.isEmpty()) {
+                        SearchResult searchResult = new SearchResult(key, localPeer, 0, results);
+                        store.addSearchResult(searchResult);
+                    }
                     for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
                         Peer peer = entry.getValue();
                         MessageUtils.sendUDPMessage(peer.getIp(),
@@ -62,6 +71,9 @@ public class DCNode {
                                                     "SER " + localPeer.getIp() + " " + localPeer.getPort()
                                                     + " \"" + key + "\" 2");
                     }
+                    Runnable resultTask = () -> Store.getInstance().displaySearchResults();
+                    int delay = 5;
+                    scheduler.schedule(resultTask, delay, TimeUnit.SECONDS);
                     break;
                 case "requests":
                     Store.getInstance().displaySearchRequestsList();

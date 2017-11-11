@@ -120,7 +120,7 @@ public class Store {
 
     public List<String> findInFiles(String key) {
         List<String> results = new ArrayList<>();
-        String list = "\n=========== Search Results ===========\n";
+        String list = "\n=========== Local Search Results ===========\n";
         for (String fileName : fileNames) {
             if (fileName.toUpperCase().contains(key.toUpperCase())) {
                 if (fileName.equalsIgnoreCase(key)) {
@@ -144,7 +144,7 @@ public class Store {
                 }
             }
         }
-        System.out.println(list + "======================================");
+        System.out.println(list + "============================================");
         return results;
     }
 
@@ -173,7 +173,7 @@ public class Store {
     public void displaySearchResults() {
         String list = "\n=========== Search Results ===========\n" +
                       "Search Key:" + mySearchRequest.getSearchKey()
-                      + "\nPeer\t\t\t\t\t|Hops\t|Count\t|Files\n";
+                      + "\nPeer\t\t\t\t|Hops\t|Count\t|Files\n";
         for (SearchResult result : searchResults) {
             Peer peer = result.getPeerWithResults();
             list += peer.getIp() + ":" + peer.getPort() + "\t ";
@@ -184,7 +184,7 @@ public class Store {
             }
             list += "\n";
         }
-        System.out.println(list + "====================================");
+        System.out.println(list + "======================================");
     }
 
 }
