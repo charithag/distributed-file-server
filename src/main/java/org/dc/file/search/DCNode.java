@@ -1,12 +1,13 @@
 package org.dc.file.search;
 
+import org.apache.commons.lang.RandomStringUtils;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +27,7 @@ public class DCNode {
         store.setServerPort(scanner.nextInt());
         scanner.nextLine();
         store.displayFilesList();
-        String uuid = UUID.randomUUID().toString();
+        String uuid = RandomStringUtils.randomAlphanumeric(8);
         Peer localPeer = MessageUtils.init(uuid);
         MessageUtils.sendTCPMessage(store.getServerIp(),
                                     store.getServerPort(),
