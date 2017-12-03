@@ -1,7 +1,10 @@
 package org.dc.file.search;
 
 import org.apache.commons.lang.RandomStringUtils;
+import org.dc.file.search.ui.ConfigForm;
+import org.dc.file.search.ui.MyMoviesList;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -19,19 +22,25 @@ public class DCNode {
                 = Executors.newSingleThreadScheduledExecutor();
 
         Store store = Store.getInstance();
+
+        ConfigForm.show();
+
         Scanner scanner = new Scanner(System.in);
 
-        System.out.print("Input the Bootstrap Server IP: ");
-        store.setServerIp(scanner.nextLine());
-        System.out.print("Input the Bootstrap Server Port: ");
-        store.setServerPort(scanner.nextInt());
-        scanner.nextLine();
-        store.displayFilesList();
+//        System.out.print("Input the Bootstrap Server IP: ");
+//        store.setServerIp(scanner.nextLine());
+//        System.out.print("Input the Bootstrap Server Port: ");
+//        store.setServerPort(scanner.nextInt());
+//        scanner.nextLine();
+//        store.displayFilesList();
         String uuid = RandomStringUtils.randomAlphanumeric(8);
         Peer localPeer = MessageUtils.init(uuid);
-        MessageUtils.sendTCPMessage(store.getServerIp(),
-                                    store.getServerPort(),
-                                    "REG " + localPeer.getIp() + " " + localPeer.getPort() + " " + uuid);
+//        MessageUtils.sendTCPMessage(store.getServerIp(),
+//                                    store.getServerPort(),
+//                                    "REG " + localPeer.getIp() + " " + localPeer.getPort() + " " + uuid);
+
+        MyMoviesList.show();
+
         while (true) {
             String input = scanner.nextLine();
             switch (input) {
@@ -39,12 +48,12 @@ public class DCNode {
                     for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
                         Peer peer = entry.getValue();
                         MessageUtils.sendUDPMessage(peer.getIp(),
-                                                    peer.getPort(),
-                                                    "LEAVE " + localPeer.getIp() + " " + localPeer.getPort());
+                                peer.getPort(),
+                                "LEAVE " + localPeer.getIp() + " " + localPeer.getPort());
                     }
                     MessageUtils.sendTCPMessage(store.getServerIp(),
-                                                store.getServerPort(),
-                                                "UNREG " + localPeer.getIp() + " " + localPeer.getPort() + " " + uuid);
+                            store.getServerPort(),
+                            "UNREG " + localPeer.getIp() + " " + localPeer.getPort() + " " + uuid);
                     break;
                 case "peers":
                     store.displayPeerList();
@@ -56,7 +65,7 @@ public class DCNode {
                     System.out.print("Enter key: ");
                     String key = scanner.nextLine();
                     SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(),
-                                                                    key, 2, localPeer);
+                            key, 2, localPeer);
                     store.setMySearchRequest(searchRequest);
                     store.addSearchRequest(searchRequest);
                     store.setSearchResults(new ArrayList<>());
@@ -68,9 +77,9 @@ public class DCNode {
                     for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
                         Peer peer = entry.getValue();
                         MessageUtils.sendUDPMessage(peer.getIp(),
-                                                    peer.getPort(),
-                                                    "SER " + localPeer.getIp() + " " + localPeer.getPort()
-                                                    + " \"" + key + "\" 2");
+                                peer.getPort(),
+                                "SER " + localPeer.getIp() + " " + localPeer.getPort()
+                                        + " \"" + key + "\" 2");
                     }
                     Runnable resultTask = () -> Store.getInstance().displaySearchResults();
                     int delay = 5;
