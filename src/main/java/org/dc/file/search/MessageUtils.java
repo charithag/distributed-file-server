@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Inet4Address;
@@ -45,8 +46,9 @@ public class MessageUtils {
                         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                         serverSocket.receive(receivePacket);
                         String message = new String(receivePacket.getData());
-                        System.out.println("UDP MESSAGE RECEIVED FROM: " + receivePacket.getAddress().getHostAddress() + ":"
-                                           + receivePacket.getPort() + " MESSAGE: " + message);
+                        System.out.println(
+                                "UDP MESSAGE RECEIVED FROM: " + receivePacket.getAddress().getHostAddress() + ":"
+                                        + receivePacket.getPort() + " MESSAGE: " + message);
                         processMessage(message);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -77,6 +79,11 @@ public class MessageUtils {
     }
 
     public static void sendTCPMessage(final String destinationIp, final int destinationPort, final String message) {
+        sendTCPMessage(destinationIp, destinationPort, message, null);
+    }
+
+    public static void sendTCPMessage(final String destinationIp, final int destinationPort, final String message,
+                                      ResponseHandler responseHandler) {
         new Thread(() -> {
             try {
                 int length = message.length() + 5;
@@ -86,20 +93,25 @@ public class MessageUtils {
                 BufferedReader fromRemote = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 toRemote.write(payload.getBytes());
                 System.out.println("TCP MESSAGE SENT TO: " + destinationIp + ":" + destinationPort
-                                   + " MESSAGE: " + payload);
+                                           + " MESSAGE: " + payload);
                 String response = fromRemote.readLine();
                 if (response != null) {
                     System.out.println("TCP RESPONSE RECEIVED FROM: " + destinationIp + ":" + destinationPort
-                                       + " MESSAGE: " + response);
+                                               + " MESSAGE: " + response);
+                    if (responseHandler != null) responseHandler.onSuccess();
                     MessageUtils.processMessage(response);
                 }
                 if (clientSocket.isConnected()) {
                     clientSocket.close();
                 }
             } catch (IOException e) {
-                System.err.println("Unable to connect with bootstrap server at " + destinationIp
-                                   + ":" + destinationPort + ". " + e.getMessage());
-
+                System.out.println("Unable to connect with bootstrap server at " + destinationIp
+                                           + ":" + destinationPort + ". " + e.getMessage());
+                if (responseHandler != null) {
+                    responseHandler.onError(
+                            new ConnectException("Unable to connect with bootstrap server at " + destinationIp
+                                                         + ":" + destinationPort + ". " + e.getMessage()));
+                }
             }
         }).start();
     }
@@ -112,7 +124,7 @@ public class MessageUtils {
                 DatagramSocket clientSocket = new DatagramSocket();
                 InetAddress IPAddress = InetAddress.getByName(destinationIp);
                 System.out.println("UDP MESSAGE SENT TO: " + destinationIp + ":" + destinationPort
-                                   + " MESSAGE: " + payload);
+                                           + " MESSAGE: " + payload);
                 byte[] sendData = payload.getBytes();
                 DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, destinationPort);
                 clientSocket.send(sendPacket);
@@ -182,7 +194,7 @@ public class MessageUtils {
                 if (resultCode < 9998) {
                     addSearchResult(response, data);
                 } else {
-                    System.err.println("Error occurred while searching for files. Code: " + resultCode);
+                    System.err.println("onError occurred while searching for files. Code: " + resultCode);
                 }
                 break;
             default:
@@ -200,7 +212,8 @@ public class MessageUtils {
         }
         String query = response.substring(response.indexOf('"') + 1, response.lastIndexOf('"'));
         peer = new Peer(data[2], Integer.parseInt(data[3]));
-        SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(), query, --hopCount, peer);
+        SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(), query, --hopCount,
+                                                        peer);
         if (store.addSearchRequest(searchRequest)) {
             if (hopCount > 0) {
                 for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
@@ -208,14 +221,16 @@ public class MessageUtils {
                     if (!remotePeer.getKey().equals(peer.getKey())) {
                         MessageUtils.sendUDPMessage(remotePeer.getIp(),
                                                     remotePeer.getPort(),
-                                                    "SER " + peer.getIp() + " " + peer.getPort() + " \"" + searchRequest.getSearchKey()
-                                                    + "\" " + hopCount);
+                                                    "SER " + peer.getIp() + " " + peer.getPort() + " \"" +
+                                                            searchRequest.getSearchKey()
+                                                            + "\" " + hopCount);
                     }
                 }
             }
             List<String> results = store.findInFiles(searchRequest.getSearchKey());
             if (!results.isEmpty()) {
-                String resultMsg = results.size() + " " + localPeer.getIp() + " " + localPeer.getPort() + " " + hopCount + " ";
+                String resultMsg =
+                        results.size() + " " + localPeer.getIp() + " " + localPeer.getPort() + " " + hopCount + " ";
                 for (String result : results) {
                     resultMsg += " " + result;
                 }
