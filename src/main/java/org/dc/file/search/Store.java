@@ -5,6 +5,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Store {
@@ -109,6 +110,10 @@ public class Store {
         peerMap.remove(peer.getKey());
     }
 
+    public Set<Map.Entry<String, Peer>> getPeerList() {
+        return peerMap.entrySet();
+    }
+
     public void displayPeerList() {
         String list = "\n=========== Peers List ===========\n";
         for (Map.Entry<String, Peer> entry : peerMap.entrySet()) {
@@ -154,6 +159,10 @@ public class Store {
             list += fileName + "\n";
         }
         System.out.println(list + "==================================");
+    }
+
+    public List<String> getFilesList() {
+        return fileNames;
     }
 
     public boolean addSearchRequest(SearchRequest searchRequest) {
