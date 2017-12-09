@@ -22,6 +22,7 @@ public class PeersListForm extends javax.swing.JFrame {
      */
     public PeersListForm() {
         initComponents();
+        setLocationRelativeTo(null);
         Store store = Store.getInstance();
         DefaultListModel model = new DefaultListModel();
         for (Map.Entry<String, Peer> peerEntry : store.getPeerList()) {

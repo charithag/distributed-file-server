@@ -33,6 +33,7 @@ public class SettingsForm extends javax.swing.JFrame {
      */
     public SettingsForm() {
         initComponents();
+        setLocationRelativeTo(null);
         try {
             txtServerIP.setText(getLocalHostIP());
         } catch (ConnectException e) {

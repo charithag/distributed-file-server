@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import javax.swing.*;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
@@ -39,7 +40,7 @@ public class DashboardForm extends javax.swing.JFrame {
     private Peer localPeer;
     private String uuid;
 
-    class Item extends JPanel{
+    class Item extends JPanel {
         JLabel l1;
         JLabel l2;
 
@@ -57,24 +58,19 @@ public class DashboardForm extends javax.swing.JFrame {
      */
     public DashboardForm() {
         initComponents();
-
-        String[] columnNames = {"Result"};
+        setLocationRelativeTo(null);
+        String[] columnNames = {"Peer", "Hop Count", "Size", "Movie List", "Ratings"};
         Object[][] data = {
-                {new TableRow("manual", 5, 0, 0, "")},
-                {new TableRow("locked", 4,0, 0, "")},
-                {new TableRow("manual", 0, 0, 0, "")},
-                {new TableRow("locked", 0,0, 0, "")},
+                {"manual", 5, 0, 0, new StarRater(5, 2, 1)},
+                {"locked", 4, 0, 0, new StarRater(5, 2, 1)},
+                {"manual", 0, 0, 0, new StarRater(5, 2, 1)},
+                {"locked", 0, 0, 0, new StarRater(5, 2, 1)},
         };
-        TableModel model = new DefaultTableModel(data, columnNames) {
-            @Override
-            public Class<?> getColumnClass(int column) {
-                return TableRow.class;
-            }
-        };
+        TableModel model = new DefaultTableModel(data, columnNames);
         jTable1.setModel(model);
         jTable1.setRowHeight(32);
-        jTable1.setDefaultRenderer(TableRow.class, new RowRenderer());
-        jTable1.setDefaultEditor(TableRow.class, new RowEditor());
+        jTable1.getColumnModel().getColumn(4).setCellRenderer(new StarRatingsRenderer());
+        jTable1.getColumnModel().getColumn(4).setCellEditor(new StarRatingsEditor());
 
         uuid = RandomStringUtils.randomAlphanumeric(8);
         setTitle("Dashboard :" + uuid);
@@ -85,27 +81,6 @@ public class DashboardForm extends javax.swing.JFrame {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Peer initialization failed!", "Error Occurred!",
                                           JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    class CheckboxListItem {
-        private String label;
-        private boolean isSelected = false;
-
-        public CheckboxListItem(String label) {
-            this.label = label;
-        }
-
-        public boolean isSelected() {
-            return isSelected;
-        }
-
-        public void setSelected(boolean isSelected) {
-            this.isSelected = isSelected;
-        }
-
-        public String toString() {
-            return label;
         }
     }
 
@@ -145,9 +120,15 @@ public class DashboardForm extends javax.swing.JFrame {
         });
 
         lstSearchResult.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
+            String[] strings = {"Item 1", "Item 2", "Item 3", "Item 4", "Item 5"};
+
+            public int getSize() {
+                return strings.length;
+            }
+
+            public String getElementAt(int i) {
+                return strings[i];
+            }
         });
         jScrollPane1.setViewportView(lstSearchResult);
 
@@ -166,57 +147,70 @@ public class DashboardForm extends javax.swing.JFrame {
         });
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
-            }
+                new Object[][]{
+                        {null, null, null, null},
+                        {null, null, null, null},
+                        {null, null, null, null},
+                        {null, null, null, null}
+                },
+                new String[]{
+                        "Title 1", "Title 2", "Title 3", "Title 4"
+                }
         ));
         jScrollPane2.setViewportView(jTable1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 557, javax.swing.GroupLayout.PREFERRED_SIZE))
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(txtSearchKey, javax.swing.GroupLayout.PREFERRED_SIZE, 468, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnSearch))
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 557, javax.swing.GroupLayout.PREFERRED_SIZE)))
-            .addGroup(layout.createSequentialGroup()
-                .addGap(315, 315, 315)
-                .addComponent(btnMoviesList)
-                .addGap(18, 18, 18)
-                .addComponent(btnPeersList))
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createSequentialGroup()
+                                          .addContainerGap()
+                                          .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 557,
+                                                        javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(layout.createSequentialGroup()
+                                          .addComponent(txtSearchKey, javax.swing.GroupLayout.PREFERRED_SIZE, 468,
+                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
+                                          .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                          .addComponent(btnSearch))
+                        .addGroup(layout.createSequentialGroup()
+                                          .addContainerGap()
+                                          .addGroup(layout.createParallelGroup(
+                                                  javax.swing.GroupLayout.Alignment.LEADING)
+                                                            .addComponent(jLabel1)
+                                                            .addComponent(jScrollPane2,
+                                                                          javax.swing.GroupLayout.PREFERRED_SIZE, 557,
+                                                                          javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGroup(layout.createSequentialGroup()
+                                          .addGap(315, 315, 315)
+                                          .addComponent(btnMoviesList)
+                                          .addGap(18, 18, 18)
+                                          .addComponent(btnPeersList))
         );
         layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(28, 28, 28)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnSearch)
-                    .addComponent(jLabel1)
-                    .addComponent(txtSearchKey, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 52, Short.MAX_VALUE)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 190, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 281, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnMoviesList)
-                    .addComponent(btnPeersList))
-                .addContainerGap(7, Short.MAX_VALUE))
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createSequentialGroup()
+                                          .addGap(28, 28, 28)
+                                          .addGroup(layout.createParallelGroup(
+                                                  javax.swing.GroupLayout.Alignment.BASELINE)
+                                                            .addComponent(btnSearch)
+                                                            .addComponent(jLabel1)
+                                                            .addComponent(txtSearchKey,
+                                                                          javax.swing.GroupLayout.PREFERRED_SIZE,
+                                                                          javax.swing.GroupLayout.DEFAULT_SIZE,
+                                                                          javax.swing.GroupLayout.PREFERRED_SIZE))
+                                          .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 52,
+                                                           Short.MAX_VALUE)
+                                          .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 190,
+                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
+                                          .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                          .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 281,
+                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
+                                          .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                          .addGroup(layout.createParallelGroup(
+                                                  javax.swing.GroupLayout.Alignment.BASELINE)
+                                                            .addComponent(btnMoviesList)
+                                                            .addComponent(btnPeersList))
+                                          .addContainerGap(7, Short.MAX_VALUE))
         );
 
         pack();
@@ -251,8 +245,8 @@ public class DashboardForm extends javax.swing.JFrame {
                     String resultStr = "";
                     Peer peer = searchResult.getPeerWithResults();
                     resultStr += peer.getIp() + ":" + peer.getPort() + "\t ";
-                    resultStr +=searchResult.getHopCount() + "\t\t ";
-                    resultStr +=searchResult.getResults().size() + "\t\t ";
+                    resultStr += searchResult.getHopCount() + "\t\t ";
+                    resultStr += searchResult.getResults().size() + "\t\t ";
                     String files = "";
                     for (String fileName : searchResult.getResults()) {
                         files += fileName + " ";
@@ -306,108 +300,56 @@ public class DashboardForm extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 }
 
-class TableRow {
-    public final String peerIp;
-    public final int hopCount;
-    public final int resultSize;
-    public final String result;
-    public final int rating;
-
-    public TableRow(String peerIP, int rating, int hopCount, int resultSize, String result) {
-        this.peerIp = peerIP;
-        this.rating = rating;
-        this.hopCount = hopCount;
-        this.resultSize = resultSize;
-        this.result = result;
-    }
-}
-
-class RowPanel extends JPanel {
+class StarRatingsPanel extends JPanel {
     private static String DEFAULT = "0";
-    public final JLabel peerIp = new JLabel("192.168.8.1:9090");
-    public final JLabel hopCount = new JLabel("0");
-    public final JLabel resultSize = new JLabel("0");
-    public final JLabel result = new JLabel("0");
-    public final StarRater starRater = new StarRater(5, 2, 1);
+    protected final StarRater starRater = new StarRater(5, 2, 1);
 
-    public RowPanel() {
-        GridBagLayout gridBagLayout = new GridBagLayout();
-        setLayout(gridBagLayout);
+    public StarRatingsPanel() {
+        setLayout(new GridLayout());
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         starRater.addStarListener(
-                new StarRater.StarListener() {
-                    public void handleSelection(int selection) {
-                        System.out.println(selection);
-                    }
-                });
-        JPanel panel = new JPanel();
-        panel.setOpaque(true);
-        panel.add(peerIp);
-        panel.add(hopCount);
-        panel.add(resultSize);
-        panel.add(result);
-//        add(panel);
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.BOTH;
-        c.weightx = 1.0;
-        gridBagLayout.setConstraints(peerIp, c);
-        add(peerIp);
-        gridBagLayout.setConstraints(hopCount, c);
-        add(hopCount);
-        gridBagLayout.setConstraints(resultSize, c);
-        add(resultSize);
-        gridBagLayout.setConstraints(result, c);
-        add(result);
+                selection -> System.out.println(selection));
         add(starRater);
     }
 
-    public void updateValue(TableRow bt) {
-        peerIp.setText(bt.peerIp);
-        hopCount.setText(String.valueOf(bt.hopCount));
-        resultSize.setText(String.valueOf(bt.resultSize));
-        result.setText(bt.result);
-        starRater.setRating(bt.rating);
+    public void updateValue(StarRater bt) {
+        starRater.setRating(bt.getRating());
     }
 }
 
-class RowRenderer extends RowPanel implements TableCellRenderer {
-    public RowRenderer() {
+class StarRatingsRenderer extends StarRatingsPanel implements TableCellRenderer {
+    public static final DefaultTableCellRenderer DEFAULT_RENDERER = new DefaultTableCellRenderer();
+
+    public StarRatingsRenderer() {
         super();
         setName("Table.cellRenderer");
     }
 
     @Override
-    public Component getTableCellRendererComponent(
-            JTable table, Object value, boolean isSelected, boolean hasFocus,
-            int row, int column) {
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+                                                   int row, int column) {
         setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-        if (value instanceof TableRow) {
-            updateValue((TableRow) value);
-        }
+        updateValue((StarRater) value);
         return this;
     }
 }
 
-class RowEditor extends RowPanel implements TableCellEditor {
+class StarRatingsEditor extends StarRatingsPanel implements TableCellEditor {
     protected transient ChangeEvent changeEvent;
 
     @Override
     public Component getTableCellEditorComponent(
             JTable table, Object value, boolean isSelected, int row, int column) {
         this.setBackground(table.getSelectionBackground());
-        if (value instanceof TableRow) {
-            updateValue((TableRow) value);
-        }
+        updateValue((StarRater) value);
         return this;
     }
 
     @Override
     public Object getCellEditorValue() {
-        return new TableRow(peerIp.getText(), starRater.getSelection(), Integer.parseInt(hopCount.getText()), Integer.parseInt(resultSize.getText()), result.getText());
+        return starRater;
     }
 
-    //Copied from AbstractCellEditor
-    //protected EventListenerList listenerList = new EventListenerList();
     @Override
     public boolean isCellEditable(EventObject e) {
         return true;

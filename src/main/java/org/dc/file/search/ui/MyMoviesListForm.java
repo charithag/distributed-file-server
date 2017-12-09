@@ -21,6 +21,7 @@ public class MyMoviesListForm extends javax.swing.JFrame {
      */
     public MyMoviesListForm() {
         initComponents();
+        setLocationRelativeTo(null);
         Store store = Store.getInstance();
         DefaultListModel model = new DefaultListModel();
         for (String fileName : store.getFilesList()) {
