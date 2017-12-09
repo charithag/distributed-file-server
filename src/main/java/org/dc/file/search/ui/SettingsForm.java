@@ -20,7 +20,6 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import javax.swing.*;
 
@@ -53,8 +52,8 @@ public class SettingsForm extends javax.swing.JFrame {
         txtServerIP = new javax.swing.JTextField();
         jLabel2 = new javax.swing.JLabel();
         txtServerPort = new javax.swing.JTextField();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
+        btnConnect = new javax.swing.JButton();
+        btnExit = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Settings");
@@ -73,17 +72,17 @@ public class SettingsForm extends javax.swing.JFrame {
             }
         });
 
-        jButton1.setText("Connect");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        btnConnect.setText("Connect");
+        btnConnect.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                btnConnectActionPerformed(evt);
             }
         });
 
-        jButton2.setText("Exit");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        btnExit.setText("Exit");
+        btnExit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                btnExitActionPerformed(evt);
             }
         });
 
@@ -99,12 +98,12 @@ public class SettingsForm extends javax.swing.JFrame {
                                                                                       javax.swing.GroupLayout
                                                                                               .DEFAULT_SIZE,
                                                                                       Short.MAX_VALUE)
-                                                                              .addComponent(jButton1)
+                                                                              .addComponent(btnConnect)
                                                                               .addPreferredGap(
                                                                                       javax.swing.LayoutStyle
                                                                                               .ComponentPlacement
                                                                                               .RELATED)
-                                                                              .addComponent(jButton2))
+                                                                              .addComponent(btnExit))
                                                             .addGroup(javax.swing.GroupLayout.Alignment.LEADING,
                                                                       layout.createSequentialGroup()
                                                                               .addGap(36, 36, 36)
@@ -151,15 +150,15 @@ public class SettingsForm extends javax.swing.JFrame {
                                                            Short.MAX_VALUE)
                                           .addGroup(layout.createParallelGroup(
                                                   javax.swing.GroupLayout.Alignment.BASELINE)
-                                                            .addComponent(jButton1)
-                                                            .addComponent(jButton2))
+                                                            .addComponent(btnConnect)
+                                                            .addComponent(btnExit))
                                           .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void btnConnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         try {
             // Save IP and Port
             Store store = Store.getInstance();
@@ -179,7 +178,7 @@ public class SettingsForm extends javax.swing.JFrame {
 
                 @Override
                 public void onError(Exception e) {
-                    JOptionPane.showMessageDialog(null, "Server IP and Port should be numeric!", "Invalid Settings!",
+                    JOptionPane.showMessageDialog(null, e.getMessage(), "Connection Failed!",
                                                   JOptionPane.ERROR_MESSAGE);
                 }
             };
@@ -202,7 +201,7 @@ public class SettingsForm extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_txtServerPortActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void btnExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         System.exit(0);
     }//GEN-LAST:event_jButton2ActionPerformed
 
@@ -233,48 +232,9 @@ public class SettingsForm extends javax.swing.JFrame {
         }
     }
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(SettingsForm.class.getName()).log(java.util.logging.Level.SEVERE, null,
-                                                                                 ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(SettingsForm.class.getName()).log(java.util.logging.Level.SEVERE, null,
-                                                                                 ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(SettingsForm.class.getName()).log(java.util.logging.Level.SEVERE, null,
-                                                                                 ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(SettingsForm.class.getName()).log(java.util.logging.Level.SEVERE, null,
-                                                                                 ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new SettingsForm().setVisible(true);
-            }
-        });
-    }
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
+    private javax.swing.JButton btnConnect;
+    private javax.swing.JButton btnExit;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JTextField txtServerIP;

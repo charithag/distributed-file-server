@@ -85,10 +85,9 @@ public class MessageUtils {
     public static void sendTCPMessage(final String destinationIp, final int destinationPort, final String message,
                                       ResponseHandler responseHandler) {
         new Thread(() -> {
-            try {
+            try (Socket clientSocket = new Socket(destinationIp, destinationPort)) {
                 int length = message.length() + 5;
                 String payload = String.format("%04d", length) + " " + message;
-                Socket clientSocket = new Socket(destinationIp, destinationPort);
                 DataOutputStream toRemote = new DataOutputStream(clientSocket.getOutputStream());
                 BufferedReader fromRemote = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 toRemote.write(payload.getBytes());
@@ -101,12 +100,10 @@ public class MessageUtils {
                     if (responseHandler != null) responseHandler.onSuccess();
                     MessageUtils.processMessage(response);
                 }
-                if (clientSocket.isConnected()) {
-                    clientSocket.close();
-                }
             } catch (IOException e) {
-                System.out.println("Unable to connect with bootstrap server at " + destinationIp
-                                           + ":" + destinationPort + ". " + e.getMessage());
+                System.out.println(
+                        "Unable to connect with bootstrap server at " + destinationIp + ":" + destinationPort + ". " +
+                                e.getMessage());
                 if (responseHandler != null) {
                     responseHandler.onError(
                             new ConnectException("Unable to connect with bootstrap server at " + destinationIp
