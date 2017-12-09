@@ -306,6 +306,16 @@ public class DashboardForm extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 }
 
+class TableRow {
+    public final String state;
+    public final int value;
+
+    public TableRow(String state, int value) {
+        this.state = state;
+        this.value = value;
+    }
+}
+
 class RowPanel extends JPanel {
     private static String DEFAULT = "0";
     public final JLabel label = new JLabel("lll");
