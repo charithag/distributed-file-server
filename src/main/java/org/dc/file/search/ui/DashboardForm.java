@@ -58,12 +58,12 @@ public class DashboardForm extends javax.swing.JFrame {
     public DashboardForm() {
         initComponents();
 
-        String[] columnNames = {"Search Result"};
+        String[] columnNames = {"Result"};
         Object[][] data = {
-                {new TableRow("manual", 5)},
-                {new TableRow("locked", 4)},
-                {new TableRow("manual", 0)},
-                {new TableRow("locked", 0)},
+                {new TableRow("manual", 5, 0, 0, "")},
+                {new TableRow("locked", 4,0, 0, "")},
+                {new TableRow("manual", 0, 0, 0, "")},
+                {new TableRow("locked", 0,0, 0, "")},
         };
         TableModel model = new DefaultTableModel(data, columnNames) {
             @Override
@@ -307,37 +307,66 @@ public class DashboardForm extends javax.swing.JFrame {
 }
 
 class TableRow {
-    public final String state;
-    public final int value;
+    public final String peerIp;
+    public final int hopCount;
+    public final int resultSize;
+    public final String result;
+    public final int rating;
 
-    public TableRow(String state, int value) {
-        this.state = state;
-        this.value = value;
+    public TableRow(String peerIP, int rating, int hopCount, int resultSize, String result) {
+        this.peerIp = peerIP;
+        this.rating = rating;
+        this.hopCount = hopCount;
+        this.resultSize = resultSize;
+        this.result = result;
     }
 }
 
 class RowPanel extends JPanel {
     private static String DEFAULT = "0";
-    public final JLabel label = new JLabel("lll");
+    public final JLabel peerIp = new JLabel("192.168.8.1:9090");
+    public final JLabel hopCount = new JLabel("0");
+    public final JLabel resultSize = new JLabel("0");
+    public final JLabel result = new JLabel("0");
     public final StarRater starRater = new StarRater(5, 2, 1);
 
     public RowPanel() {
-        super(new BorderLayout(5, 5));
+        GridBagLayout gridBagLayout = new GridBagLayout();
+        setLayout(gridBagLayout);
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         starRater.addStarListener(
                 new StarRater.StarListener() {
-
                     public void handleSelection(int selection) {
                         System.out.println(selection);
                     }
                 });
-
-        add(label, BorderLayout.WEST);
-        add(starRater, BorderLayout.EAST);
+        JPanel panel = new JPanel();
+        panel.setOpaque(true);
+        panel.add(peerIp);
+        panel.add(hopCount);
+        panel.add(resultSize);
+        panel.add(result);
+//        add(panel);
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.BOTH;
+        c.weightx = 1.0;
+        gridBagLayout.setConstraints(peerIp, c);
+        add(peerIp);
+        gridBagLayout.setConstraints(hopCount, c);
+        add(hopCount);
+        gridBagLayout.setConstraints(resultSize, c);
+        add(resultSize);
+        gridBagLayout.setConstraints(result, c);
+        add(result);
+        add(starRater);
     }
 
     public void updateValue(TableRow bt) {
-        starRater.setRating(bt.value);
+        peerIp.setText(bt.peerIp);
+        hopCount.setText(String.valueOf(bt.hopCount));
+        resultSize.setText(String.valueOf(bt.resultSize));
+        result.setText(bt.result);
+        starRater.setRating(bt.rating);
     }
 }
 
@@ -374,7 +403,7 @@ class RowEditor extends RowPanel implements TableCellEditor {
 
     @Override
     public Object getCellEditorValue() {
-        return new TableRow(label.getText(), starRater.getSelection());
+        return new TableRow(peerIp.getText(), starRater.getSelection(), Integer.parseInt(hopCount.getText()), Integer.parseInt(resultSize.getText()), result.getText());
     }
 
     //Copied from AbstractCellEditor

@@ -194,9 +194,9 @@ public class StarRater extends JPanel {
     }
 
     /**
-     * Returns the preferred size.
+     * Returns the preferred resultSize.
      *
-     * @return  The preferred size.
+     * @return  The preferred resultSize.
      */
     @Override
     public Dimension getPreferredSize() {
@@ -248,7 +248,7 @@ public class StarRater extends JPanel {
     }
 
     /**
-     * Converts an image to a compressed byte array. GZIPs the image to reduce the size. Use compressedByteArrayToImage(byte[] data) to
+     * Converts an image to a compressed byte array. GZIPs the image to reduce the resultSize. Use compressedByteArrayToImage(byte[] data) to
      * retrieve the original image. The image is not recognizable as image from standard tools.
      *
      * @param image  The image to convert.
@@ -256,7 +256,7 @@ public class StarRater extends JPanel {
      * @throws IOException if something goes wrong.
      */
     public byte[] imageToCompressedByteArray(Image image) throws IOException {
-        // get image size
+        // get image resultSize
         int width = image.getWidth(null);
         int height = image.getHeight(null);
 
