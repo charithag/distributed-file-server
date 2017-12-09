@@ -30,6 +30,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 
 /**
@@ -40,18 +41,20 @@ public class DashboardForm extends javax.swing.JFrame {
     private Peer localPeer;
     private String uuid;
 
-    class Item extends JPanel {
-        JLabel l1;
-        JLabel l2;
+    private final static int PEER_COL_INDEX = 0;
+    private final static int HOP_COUNT_COL_INDEX = 1;
+    private final static int MOVIE_COL_INDEX = 2;
+    private final static int STAR_RATINGS_COL_INDEX = 3;
+    private final static int UUID_LEN = 8;
+    private final static int MAX_COLS = 4;
 
-        public Item(String a, String b) {
-            setLayout(new FlowLayout());
-            this.l1 = new JLabel(a);
-            this.l2 = new JLabel(b);
-            add(l1);
-            add(l2);
-        }
-    }
+    private final String[] columnNames = {"Peer", "Hop Count", "Movie", "Ratings"};
+    private Object[][] data = {
+            {"manual", 5, 0, new StarRater(5, 2, 1)},
+            {"locked", 4, 0, new StarRater(5, 2, 1)},
+            {"manual", 0, 0, new StarRater(5, 2, 1)},
+            {"locked", 0, 0, new StarRater(5, 2, 1)},
+    };
 
     /**
      * Creates new form Dashboard
@@ -59,20 +62,20 @@ public class DashboardForm extends javax.swing.JFrame {
     public DashboardForm() {
         initComponents();
         setLocationRelativeTo(null);
-        String[] columnNames = {"Peer", "Hop Count", "Size", "Movie List", "Ratings"};
-        Object[][] data = {
-                {"manual", 5, 0, 0, new StarRater(5, 2, 1)},
-                {"locked", 4, 0, 0, new StarRater(5, 2, 1)},
-                {"manual", 0, 0, 0, new StarRater(5, 2, 1)},
-                {"locked", 0, 0, 0, new StarRater(5, 2, 1)},
-        };
-        TableModel model = new DefaultTableModel(data, columnNames);
+        DefaultTableModel model = new DefaultTableModel(data, columnNames);
         jTable1.setModel(model);
         jTable1.setRowHeight(32);
-        jTable1.getColumnModel().getColumn(4).setCellRenderer(new StarRatingsRenderer());
-        jTable1.getColumnModel().getColumn(4).setCellEditor(new StarRatingsEditor());
 
-        uuid = RandomStringUtils.randomAlphanumeric(8);
+        jTable1.getColumnModel().getColumn(PEER_COL_INDEX).setPreferredWidth(30);
+        jTable1.getColumnModel().getColumn(HOP_COUNT_COL_INDEX).setPreferredWidth(20);
+        jTable1.getColumnModel().getColumn(MOVIE_COL_INDEX).setPreferredWidth(20);
+
+        TableColumn starRatingsColumn = jTable1.getColumnModel().getColumn(STAR_RATINGS_COL_INDEX);
+        starRatingsColumn.setCellRenderer(new StarRatingsRenderer());
+        starRatingsColumn.setCellEditor(new StarRatingsEditor());
+        starRatingsColumn.setPreferredWidth(30);
+
+        uuid = RandomStringUtils.randomAlphanumeric(UUID_LEN);
         setTitle("Dashboard :" + uuid);
         try {
             localPeer = MessageUtils.init(uuid);
@@ -239,22 +242,23 @@ public class DashboardForm extends javax.swing.JFrame {
         Runnable resultTask = () -> {
             List<SearchResult> searchResults = Store.getInstance().getSearchResults();
             if (searchResults != null) {
-                DefaultListModel listModel = new DefaultListModel();
-                listModel.addElement("Peer\t\t\t\t|Hops\t|Count\t|Files");
-                for (SearchResult searchResult : searchResults) {
-                    String resultStr = "";
+//                Object[][] data = new Object[searchResults.size()][4];
+                DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+                model.setRowCount(0);
+                for(int i=0; i < searchResults.size(); i++){
+                    Object[] data = new Object[MAX_COLS];
+                    SearchResult searchResult = searchResults.get(i);
                     Peer peer = searchResult.getPeerWithResults();
-                    resultStr += peer.getIp() + ":" + peer.getPort() + "\t ";
-                    resultStr += searchResult.getHopCount() + "\t\t ";
-                    resultStr += searchResult.getResults().size() + "\t\t ";
-                    String files = "";
+                    data[0] = peer.getIp() + ":" + peer.getPort();
+                    data[1] = searchResult.getHopCount();
+                    data[3] = new StarRater(5, 2, 1);
                     for (String fileName : searchResult.getResults()) {
-                        files += fileName + " ";
+                        data[2] = fileName;
+                        model.addRow(data);
                     }
-                    resultStr += files;
-                    listModel.addElement(resultStr);
                 }
-                lstSearchResult.setModel(listModel);
+                jTable1.setModel(model);
+                model.fireTableDataChanged();
             }
         };
         int delay = 5;
