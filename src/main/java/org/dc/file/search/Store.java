@@ -36,10 +36,10 @@ public class Store {
         }
         new Thread(() -> {
             while (true) {
-                long timeStamp = Calendar.getInstance().getTimeInMillis();
+                long currentTime = Calendar.getInstance().getTimeInMillis();
                 synchronized (LOCK) {
                     final String[] keys = {null};
-                    searchRequestMap.entrySet().stream().filter(entry -> timeStamp > entry.getValue().getTimeStamp() + (10 * 1000)).forEach(entry -> {
+                    searchRequestMap.entrySet().stream().filter(entry -> currentTime > entry.getValue().getTimeStamp() + (10 * 1000)).forEach(entry -> {
                         keys[0] = entry.getKey();
                     });
                     for (String key : keys) {
