@@ -42,12 +42,12 @@ public class DashboardForm extends javax.swing.JFrame {
 
     private final static int PEER_COL_INDEX = 0;
     private final static int HOP_COUNT_COL_INDEX = 1;
-    private final static int MOVIE_COL_INDEX = 2;
+    private final static int FILE_COL_INDEX = 2;
     private final static int STAR_RATINGS_COL_INDEX = 3;
     private final static int UUID_LEN = 8;
     private final static int MAX_COLS = 4;
 
-    private final String[] columnNames = {"Peer", "Hop Count", "Movie", "Ratings"};
+    private final String[] columnNames = {"Peer", "Hop Count", "File", "Ratings"};
     private Object[][] data = {};
 
     /**
@@ -67,7 +67,7 @@ public class DashboardForm extends javax.swing.JFrame {
 
         jTable1.getColumnModel().getColumn(PEER_COL_INDEX).setPreferredWidth(30);
         jTable1.getColumnModel().getColumn(HOP_COUNT_COL_INDEX).setPreferredWidth(20);
-        jTable1.getColumnModel().getColumn(MOVIE_COL_INDEX).setPreferredWidth(20);
+        jTable1.getColumnModel().getColumn(FILE_COL_INDEX).setPreferredWidth(20);
 
         TableColumn starRatingsColumn = jTable1.getColumnModel().getColumn(STAR_RATINGS_COL_INDEX);
         starRatingsColumn.setCellRenderer(new StarRatingsRenderer());
@@ -90,7 +90,7 @@ public class DashboardForm extends javax.swing.JFrame {
         btnSearch = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
-        btnMoviesList = new javax.swing.JButton();
+        btnFilesList = new javax.swing.JButton();
         btnPeersList = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         chkAdvancedSearch = new javax.swing.JCheckBox();
@@ -118,22 +118,22 @@ public class DashboardForm extends javax.swing.JFrame {
         });
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
-                new Object[][]{
-                        {null, null, null, null},
-                        {null, null, null, null},
-                        {null, null, null, null},
-                        {null, null, null, null}
-                },
-                new String[]{
-                        "Peer", "Hop Count", "Movie", "Ratings"
-                }
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Peer", "Hop Count", "File", "Ratings"
+            }
         ));
         jScrollPane1.setViewportView(jTable1);
 
-        btnMoviesList.setText("Movies List");
-        btnMoviesList.addActionListener(new java.awt.event.ActionListener() {
+        btnFilesList.setText("Files List");
+        btnFilesList.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnMoviesListActionPerformed(evt);
+                btnFilesListActionPerformed(evt);
             }
         });
 
@@ -144,7 +144,7 @@ public class DashboardForm extends javax.swing.JFrame {
             }
         });
 
-        jLabel1.setText("Movie Name:");
+        jLabel1.setText("File Name:");
 
         chkAdvancedSearch.setText("Enable Advanced Search");
         chkAdvancedSearch.addActionListener(new java.awt.event.ActionListener() {
@@ -190,152 +190,74 @@ public class DashboardForm extends javax.swing.JFrame {
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
-                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                                          .addContainerGap()
-                                          .addGroup(layout.createParallelGroup(
-                                                  javax.swing.GroupLayout.Alignment.LEADING)
-                                                            .addComponent(progressBar,
-                                                                          javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                          javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                          Short.MAX_VALUE)
-                                                            .addComponent(jScrollPane1)
-                                                            .addGroup(layout.createSequentialGroup()
-                                                                              .addComponent(jLabel1)
-                                                                              .addPreferredGap(
-                                                                                      javax.swing.LayoutStyle
-                                                                                              .ComponentPlacement
-                                                                                              .UNRELATED)
-                                                                              .addComponent(txtSearchKey)
-                                                                              .addPreferredGap(
-                                                                                      javax.swing.LayoutStyle
-                                                                                              .ComponentPlacement
-                                                                                              .RELATED)
-                                                                              .addComponent(btnSearch))
-                                                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING,
-                                                                      layout.createSequentialGroup()
-                                                                              .addGap(0, 0, Short.MAX_VALUE)
-                                                                              .addGroup(layout.createParallelGroup(
-                                                                                      javax.swing.GroupLayout
-                                                                                              .Alignment.LEADING)
-                                                                                                .addGroup(
-                                                                                                        javax.swing
-                                                                                                                .GroupLayout.Alignment.TRAILING,
-                                                                                                        layout.createSequentialGroup()
-                                                                                                                .addComponent(
-                                                                                                                        lblHopCount)
-                                                                                                                .addPreferredGap(
-                                                                                                                        javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                                                                                .addComponent(
-                                                                                                                        txtHopCount,
-                                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                        33,
-                                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                                .addPreferredGap(
-                                                                                                                        javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                                                                                .addComponent(
-                                                                                                                        sliderHopCount,
-                                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                        170,
-                                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                                .addPreferredGap(
-                                                                                                                        javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                                                                                .addComponent(
-                                                                                                                        lblTimeout)
-                                                                                                                .addPreferredGap(
-                                                                                                                        javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                                                                                .addComponent(
-                                                                                                                        txtTimeoutSec,
-                                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                        33,
-                                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                                .addGap(5,
-                                                                                                                        5,
-                                                                                                                        5)
-                                                                                                                .addComponent(
-                                                                                                                        lblSec)
-                                                                                                                .addPreferredGap(
-                                                                                                                        javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                                                                                                .addComponent(
-                                                                                                                        sliderTimout,
-                                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                                                                        123,
-                                                                                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                                                                                .addGap(5,
-                                                                                                                        5,
-                                                                                                                        5))
-                                                                                                .addGroup(
-                                                                                                        javax.swing
-                                                                                                                .GroupLayout.Alignment.TRAILING,
-                                                                                                        layout.createSequentialGroup()
-                                                                                                                .addComponent(
-                                                                                                                        btnMoviesList)
-                                                                                                                .addPreferredGap(
-                                                                                                                        javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                                                                                .addComponent(
-                                                                                                                        btnPeersList))))
-                                                            .addGroup(layout.createSequentialGroup()
-                                                                              .addComponent(chkAdvancedSearch)
-                                                                              .addGap(0, 0, Short.MAX_VALUE)))
-                                          .addContainerGap())
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(progressBar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(txtSearchKey)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnSearch))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addComponent(lblHopCount)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(sliderHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, 170, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(lblTimeout)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtTimeoutSec, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(5, 5, 5)
+                                .addComponent(lblSec)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(sliderTimout, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(5, 5, 5))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addComponent(btnFilesList)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnPeersList))))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(chkAdvancedSearch)
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
-                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                                          .addGap(10, 10, 10)
-                                          .addGroup(layout.createParallelGroup(
-                                                  javax.swing.GroupLayout.Alignment.BASELINE)
-                                                            .addComponent(btnSearch)
-                                                            .addComponent(txtSearchKey,
-                                                                          javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                          javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                          javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                            .addComponent(jLabel1))
-                                          .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                          .addComponent(chkAdvancedSearch)
-                                          .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                          .addGroup(layout.createParallelGroup(
-                                                  javax.swing.GroupLayout.Alignment.LEADING)
-                                                            .addGroup(layout.createParallelGroup(
-                                                                    javax.swing.GroupLayout.Alignment.BASELINE)
-                                                                              .addComponent(lblHopCount)
-                                                                              .addComponent(txtHopCount,
-                                                                                            javax.swing.GroupLayout
-                                                                                                    .PREFERRED_SIZE,
-                                                                                            javax.swing.GroupLayout
-                                                                                                    .DEFAULT_SIZE,
-                                                                                            javax.swing.GroupLayout
-                                                                                                    .PREFERRED_SIZE)
-                                                                              .addComponent(lblTimeout)
-                                                                              .addComponent(txtTimeoutSec,
-                                                                                            javax.swing.GroupLayout
-                                                                                                    .PREFERRED_SIZE,
-                                                                                            javax.swing.GroupLayout
-                                                                                                    .DEFAULT_SIZE,
-                                                                                            javax.swing.GroupLayout
-                                                                                                    .PREFERRED_SIZE)
-                                                                              .addComponent(lblSec))
-                                                            .addComponent(sliderHopCount,
-                                                                          javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                          javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                          javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                            .addComponent(sliderTimout,
-                                                                          javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                                          javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                                          javax.swing.GroupLayout.PREFERRED_SIZE))
-                                          .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                          .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                        javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
-                                          .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                          .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 158,
-                                                        javax.swing.GroupLayout.PREFERRED_SIZE)
-                                          .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                          .addGroup(layout.createParallelGroup(
-                                                  javax.swing.GroupLayout.Alignment.BASELINE)
-                                                            .addComponent(btnPeersList)
-                                                            .addComponent(btnMoviesList))
-                                          .addGap(0, 0, 0))
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(10, 10, 10)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnSearch)
+                    .addComponent(txtSearchKey, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel1))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(chkAdvancedSearch)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(lblHopCount)
+                        .addComponent(txtHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblTimeout)
+                        .addComponent(txtTimeoutSec, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblSec))
+                    .addComponent(sliderHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(sliderTimout, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnPeersList)
+                    .addComponent(btnFilesList))
+                .addGap(0, 0, 0))
         );
 
         pack();
@@ -405,14 +327,14 @@ public class DashboardForm extends javax.swing.JFrame {
         resetAndStartProgress(timeout);
     }//GEN-LAST:event_btnSearchActionPerformed
 
-    private void btnMoviesListActionPerformed(
-            java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMoviesListActionPerformed
+    private void btnFilesListActionPerformed(
+            java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFilesListActionPerformed
         new PeersListForm().setVisible(true);
-    }//GEN-LAST:event_btnMoviesListActionPerformed
+    }//GEN-LAST:event_btnFilesListActionPerformed
 
     private void btnPeersListActionPerformed(
             java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPeersListActionPerformed
-        new MyMoviesListForm().setVisible(true);
+        new MyFilesListForm().setVisible(true);
     }//GEN-LAST:event_btnPeersListActionPerformed
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
@@ -530,7 +452,7 @@ public class DashboardForm extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btnMoviesList;
+    private javax.swing.JButton btnFilesList;
     private javax.swing.JButton btnPeersList;
     private javax.swing.JButton btnSearch;
     private javax.swing.JCheckBox chkAdvancedSearch;
