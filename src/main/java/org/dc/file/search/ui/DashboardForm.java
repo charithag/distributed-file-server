@@ -39,8 +39,11 @@ import javax.swing.table.TableColumn;
  */
 public class DashboardForm extends javax.swing.JFrame {
 
+    private static final int DEFAULT_SEARCH_HOPE_COUNT = 2;
+    private static final int DEFAULT_SEARCH_TIMEOUT_SEC = 5;
     private Peer localPeer;
     private String uuid;
+    private boolean advancedSearchEnabled = false;
 
     private final static int PEER_COL_INDEX = 0;
     private final static int HOP_COUNT_COL_INDEX = 1;
@@ -50,12 +53,7 @@ public class DashboardForm extends javax.swing.JFrame {
     private final static int MAX_COLS = 4;
 
     private final String[] columnNames = {"Peer", "Hop Count", "Movie", "Ratings"};
-    private Object[][] data = {
-            {"manual", 5, 0, new StarRater(5, 2, 1)},
-            {"locked", 4, 0, new StarRater(5, 2, 1)},
-            {"manual", 0, 0, new StarRater(5, 2, 1)},
-            {"locked", 0, 0, new StarRater(5, 2, 1)},
-    };
+    private Object[][] data = {};
 
     /**
      * Creates new form DashboardFormNew
@@ -63,6 +61,11 @@ public class DashboardForm extends javax.swing.JFrame {
     public DashboardForm() {
         initComponents();
         setLocationRelativeTo(null);
+
+        setVisibleAdvancedSearchPanel(false);
+        jTable1.setVisible(false);
+        progressBar.setVisible(false);
+
         DefaultTableModel model = new DefaultTableModel(data, columnNames);
         jTable1.setModel(model);
         jTable1.setRowHeight(32);
@@ -77,9 +80,10 @@ public class DashboardForm extends javax.swing.JFrame {
         starRatingsColumn.setPreferredWidth(30);
 
         uuid = RandomStringUtils.randomAlphanumeric(UUID_LEN);
-        setTitle("Dashboard :" + uuid);
+        Peer localPeer = Store.getInstance().getLocalPeer();
+        setTitle("Dashboard :" + uuid + "(" + localPeer.getIp() + ":" + localPeer.getPort() + ")");
         try {
-            localPeer = MessageUtils.init(uuid);
+            this.localPeer = MessageUtils.init(uuid);
         } catch (IOException e) {
             System.out.println("Error occurred while initializing peer");
             e.printStackTrace();
@@ -103,6 +107,16 @@ public class DashboardForm extends javax.swing.JFrame {
         jTable1 = new javax.swing.JTable();
         btnMoviesList = new javax.swing.JButton();
         btnPeersList = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
+        chkAdvancedSearch = new javax.swing.JCheckBox();
+        lblHopCount = new javax.swing.JLabel();
+        txtHopCount = new javax.swing.JTextField();
+        lblTimeout = new javax.swing.JLabel();
+        txtTimeoutSec = new javax.swing.JTextField();
+        lblSec = new javax.swing.JLabel();
+        progressBar = new javax.swing.JProgressBar();
+        sliderHopCount = new javax.swing.JSlider();
+        sliderTimout = new javax.swing.JSlider();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -126,7 +140,7 @@ public class DashboardForm extends javax.swing.JFrame {
                 {null, null, null, null}
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
+                "Peer", "Hop Count", "Movie", "Ratings"
             }
         ));
         jScrollPane1.setViewportView(jTable1);
@@ -145,6 +159,49 @@ public class DashboardForm extends javax.swing.JFrame {
             }
         });
 
+        jLabel1.setText("Movie Name:");
+
+        chkAdvancedSearch.setText("Enable Advanced Search");
+        chkAdvancedSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                chkAdvancedSearchActionPerformed(evt);
+            }
+        });
+
+        lblHopCount.setLabelFor(txtHopCount);
+        lblHopCount.setText("Hop Count:");
+
+        txtHopCount.setEditable(false);
+        txtHopCount.setText("2");
+        txtHopCount.setToolTipText("");
+
+        lblTimeout.setLabelFor(txtTimeoutSec);
+        lblTimeout.setText("Timeout:");
+
+        txtTimeoutSec.setEditable(false);
+        txtTimeoutSec.setText("5");
+
+        lblSec.setText("sec");
+
+        sliderHopCount.setMaximum(20);
+        sliderHopCount.setMinimum(2);
+        sliderHopCount.setValue(2);
+        sliderHopCount.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                sliderHopCountStateChanged(evt);
+            }
+        });
+
+        sliderTimout.setMaximum(60);
+        sliderTimout.setMinimum(5);
+        sliderTimout.setMinorTickSpacing(5);
+        sliderTimout.setValue(5);
+        sliderTimout.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                sliderTimoutStateChanged(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -152,44 +209,92 @@ public class DashboardForm extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(progressBar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(txtSearchKey, javax.swing.GroupLayout.PREFERRED_SIZE, 468, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(txtSearchKey)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnSearch))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 551, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(btnMoviesList)
-                        .addGap(18, 18, 18)
-                        .addComponent(btnPeersList)))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addComponent(lblHopCount)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(sliderHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, 170, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(lblTimeout)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtTimeoutSec, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(5, 5, 5)
+                                .addComponent(lblSec)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(sliderTimout, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(5, 5, 5))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addComponent(btnMoviesList)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnPeersList))))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(chkAdvancedSearch)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGap(10, 10, 10)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnSearch)
-                    .addComponent(txtSearchKey, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(txtSearchKey, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 240, Short.MAX_VALUE)
+                .addComponent(chkAdvancedSearch)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(lblHopCount)
+                        .addComponent(txtHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblTimeout)
+                        .addComponent(txtTimeoutSec, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblSec))
+                    .addComponent(sliderHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(sliderTimout, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnMoviesList)
-                    .addComponent(btnPeersList))
-                .addContainerGap())
+                    .addComponent(btnPeersList)
+                    .addComponent(btnMoviesList))
+                .addGap(0, 0, 0))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchActionPerformed
+        int hopCount = DEFAULT_SEARCH_HOPE_COUNT;
+        int timeout = DEFAULT_SEARCH_TIMEOUT_SEC;
+
+        if(advancedSearchEnabled){
+            try{
+                hopCount = Integer.parseInt(txtHopCount.getText());
+                timeout = Integer.parseInt(txtTimeoutSec.getText());
+            }catch (NumberFormatException e){
+                JOptionPane.showMessageDialog(this, "Default search options will be used", "Invalid Search Options!", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
         Store store = Store.getInstance();
         String key = txtSearchKey.getText();
         SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(),
-            key, 2, localPeer);
+            key, hopCount, localPeer);
         store.setMySearchRequest(searchRequest);
         store.addSearchRequest(searchRequest);
         store.setSearchResults(new ArrayList<>());
@@ -226,10 +331,13 @@ public class DashboardForm extends javax.swing.JFrame {
                 jTable1.setModel(model);
                 model.fireTableDataChanged();
             }
+            btnSearch.setEnabled(true);
         };
-        int delay = 5;
+        btnSearch.setEnabled(false);
+        jTable1.setVisible(true);
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.schedule(resultTask, delay, TimeUnit.SECONDS);
+        scheduler.schedule(resultTask, timeout, TimeUnit.SECONDS);
+        resetAndStartProgress(timeout);
     }//GEN-LAST:event_btnSearchActionPerformed
 
     private void btnMoviesListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMoviesListActionPerformed
@@ -244,6 +352,24 @@ public class DashboardForm extends javax.swing.JFrame {
         performExit();
     }//GEN-LAST:event_formWindowClosing
 
+    private void chkAdvancedSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chkAdvancedSearchActionPerformed
+        if(!advancedSearchEnabled){
+            advancedSearchEnabled = true;
+            setVisibleAdvancedSearchPanel(true);
+        }else {
+            advancedSearchEnabled = false;
+            setVisibleAdvancedSearchPanel(false);
+        }
+    }//GEN-LAST:event_chkAdvancedSearchActionPerformed
+
+    private void sliderHopCountStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_sliderHopCountStateChanged
+        txtHopCount.setText(String.valueOf(sliderHopCount.getValue()));
+    }//GEN-LAST:event_sliderHopCountStateChanged
+
+    private void sliderTimoutStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_sliderTimoutStateChanged
+        txtTimeoutSec.setText(String.valueOf(sliderTimout.getValue()));
+    }//GEN-LAST:event_sliderTimoutStateChanged
+
     private void performExit() {
         Store store = Store.getInstance();
         for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
@@ -255,6 +381,41 @@ public class DashboardForm extends javax.swing.JFrame {
         MessageUtils.sendTCPMessage(store.getServerIp(),
                                     store.getServerPort(),
                                     "UNREG " + localPeer.getIp() + " " + localPeer.getPort() + " " + uuid);
+    }
+
+    private void resetAndStartProgress(int durationSec){
+        int maxValue = durationSec * 1000;
+        progressBar.setMinimum(0);
+        progressBar.setMaximum(maxValue);
+        progressBar.setValue(0);
+        progressBar.setVisible(true);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int count = 0;
+                while(count < maxValue) {
+                    count = count + 100;
+                    progressBar.setValue(count);
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        //do nothing
+                    }
+                }
+                progressBar.setVisible(false);
+            }
+        }).start();
+    }
+
+    private void setVisibleAdvancedSearchPanel(boolean visibility){
+        lblHopCount.setVisible(visibility);
+        txtHopCount.setVisible(visibility);
+        lblTimeout.setVisible(visibility);
+        txtTimeoutSec.setVisible(visibility);
+        lblSec.setVisible(visibility);
+        sliderHopCount.setVisible(visibility);
+        sliderTimout.setVisible(visibility);
     }
 
     /**
@@ -297,9 +458,19 @@ public class DashboardForm extends javax.swing.JFrame {
     private javax.swing.JButton btnMoviesList;
     private javax.swing.JButton btnPeersList;
     private javax.swing.JButton btnSearch;
+    private javax.swing.JCheckBox chkAdvancedSearch;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;
+    private javax.swing.JLabel lblHopCount;
+    private javax.swing.JLabel lblSec;
+    private javax.swing.JLabel lblTimeout;
+    private javax.swing.JProgressBar progressBar;
+    private javax.swing.JSlider sliderHopCount;
+    private javax.swing.JSlider sliderTimout;
+    private javax.swing.JTextField txtHopCount;
     private javax.swing.JTextField txtSearchKey;
+    private javax.swing.JTextField txtTimeoutSec;
     // End of variables declaration//GEN-END:variables
 }
 

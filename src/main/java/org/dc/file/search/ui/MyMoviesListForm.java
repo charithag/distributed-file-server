@@ -5,8 +5,10 @@
  */
 package org.dc.file.search.ui;
 
+import org.dc.file.search.Peer;
 import org.dc.file.search.Store;
 
+import java.util.Map;
 import javax.swing.*;
 
 /**
@@ -23,8 +25,9 @@ public class MyMoviesListForm extends javax.swing.JFrame {
         setLocationRelativeTo(null);
         Store store = Store.getInstance();
         DefaultListModel model = new DefaultListModel();
-        for (String fileName : store.getFilesList()) {
-            model.addElement(fileName);
+        for (Map.Entry<String, Peer> peerEntry : store.getPeerList()) {
+            Peer peer = peerEntry.getValue();
+            model.addElement(peer.getIp() + ":" + peer.getPort());
         }
         list.setModel(model);
     }

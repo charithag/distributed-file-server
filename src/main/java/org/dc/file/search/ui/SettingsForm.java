@@ -158,6 +158,7 @@ public class SettingsForm extends javax.swing.JFrame {
                                         store.getServerPort(),
                                         "REG " + localPeer.getIp() + " " + localPeer.getPort() + " " + uuid,
                                         responseHandler);
+            store.setLocalPeer(localPeer);
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Connection Failed!", JOptionPane.ERROR_MESSAGE);
         } catch (NumberFormatException e) {
