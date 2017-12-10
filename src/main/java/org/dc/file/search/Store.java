@@ -19,6 +19,7 @@ public class Store {
     private volatile List<SearchResult> searchResults;
     private int serverPort;
     private String serverIp;
+    private Peer localPeer;
 
     private Store() {
         peerMap = new HashMap<>();
@@ -121,6 +122,14 @@ public class Store {
             list += "Peer IP: " + peer.getIp() + " Port: " + peer.getPort() + "\n";
         }
         System.out.println(list + "==================================");
+    }
+
+    public Peer getLocalPeer() {
+        return localPeer;
+    }
+
+    public void setLocalPeer(Peer localPeer) {
+        this.localPeer = localPeer;
     }
 
     public List<String> findInFiles(String key) {

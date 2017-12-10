@@ -5,13 +5,6 @@
  */
 package org.dc.file.search.ui;
 
-import org.apache.commons.lang.RandomStringUtils;
-import org.dc.file.search.MessageUtils;
-import org.dc.file.search.Peer;
-import org.dc.file.search.SearchRequest;
-import org.dc.file.search.SearchResult;
-import org.dc.file.search.Store;
-
 import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,63 +16,74 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang.RandomStringUtils;
+import org.dc.file.search.MessageUtils;
+import org.dc.file.search.Peer;
+import org.dc.file.search.SearchRequest;
+import org.dc.file.search.SearchResult;
+import org.dc.file.search.Store;
+
 import javax.swing.*;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableModel;
+import javax.swing.table.TableColumn;
 
 /**
+ *
  * @author rasikaperera
  */
 public class DashboardForm extends javax.swing.JFrame {
 
+    private static final int DEFAULT_SEARCH_HOPE_COUNT = 2;
+    private static final int DEFAULT_SEARCH_TIMEOUT_SEC = 5;
     private Peer localPeer;
     private String uuid;
+    private boolean advancedSearchEnabled = false;
 
-    class Item extends JPanel{
-        JLabel l1;
-        JLabel l2;
+    private final static int PEER_COL_INDEX = 0;
+    private final static int HOP_COUNT_COL_INDEX = 1;
+    private final static int MOVIE_COL_INDEX = 2;
+    private final static int STAR_RATINGS_COL_INDEX = 3;
+    private final static int UUID_LEN = 8;
+    private final static int MAX_COLS = 4;
 
-        public Item(String a, String b) {
-            setLayout(new FlowLayout());
-            this.l1 = new JLabel(a);
-            this.l2 = new JLabel(b);
-            add(l1);
-            add(l2);
-        }
-    }
+    private final String[] columnNames = {"Peer", "Hop Count", "Movie", "Ratings"};
+    private Object[][] data = {};
 
     /**
-     * Creates new form Dashboard
+     * Creates new form DashboardFormNew
      */
     public DashboardForm() {
         initComponents();
+        setLocationRelativeTo(null);
 
-        String[] columnNames = {"Search Result"};
-        Object[][] data = {
-                {new TableRow("manual", 5)},
-                {new TableRow("locked", 4)},
-                {new TableRow("manual", 0)},
-                {new TableRow("locked", 0)},
-        };
-        TableModel model = new DefaultTableModel(data, columnNames) {
-            @Override
-            public Class<?> getColumnClass(int column) {
-                return TableRow.class;
-            }
-        };
+        setVisibleAdvancedSearchPanel(false);
+        jTable1.setVisible(false);
+        progressBar.setVisible(false);
+
+        DefaultTableModel model = new DefaultTableModel(data, columnNames);
         jTable1.setModel(model);
         jTable1.setRowHeight(32);
-        jTable1.setDefaultRenderer(TableRow.class, new RowRenderer());
-        jTable1.setDefaultEditor(TableRow.class, new RowEditor());
 
-        uuid = RandomStringUtils.randomAlphanumeric(8);
-        setTitle("Dashboard :" + uuid);
+        jTable1.getColumnModel().getColumn(PEER_COL_INDEX).setPreferredWidth(30);
+        jTable1.getColumnModel().getColumn(HOP_COUNT_COL_INDEX).setPreferredWidth(20);
+        jTable1.getColumnModel().getColumn(MOVIE_COL_INDEX).setPreferredWidth(20);
+
+        TableColumn starRatingsColumn = jTable1.getColumnModel().getColumn(STAR_RATINGS_COL_INDEX);
+        starRatingsColumn.setCellRenderer(new StarRatingsRenderer());
+        starRatingsColumn.setCellEditor(new StarRatingsEditor());
+        starRatingsColumn.setPreferredWidth(30);
+
+        uuid = RandomStringUtils.randomAlphanumeric(UUID_LEN);
+        Peer localPeer = Store.getInstance().getLocalPeer();
+        setTitle("Dashboard :" + uuid + "(" + localPeer.getIp() + ":" + localPeer.getPort() + ")");
         try {
-            localPeer = MessageUtils.init(uuid);
+            this.localPeer = MessageUtils.init(uuid);
         } catch (IOException e) {
             System.out.println("Error occurred while initializing peer");
             e.printStackTrace();
@@ -88,80 +92,43 @@ public class DashboardForm extends javax.swing.JFrame {
         }
     }
 
-    class CheckboxListItem {
-        private String label;
-        private boolean isSelected = false;
-
-        public CheckboxListItem(String label) {
-            this.label = label;
-        }
-
-        public boolean isSelected() {
-            return isSelected;
-        }
-
-        public void setSelected(boolean isSelected) {
-            this.isSelected = isSelected;
-        }
-
-        public String toString() {
-            return label;
-        }
-    }
-
     /**
-     * This method is called from within the constructor to initialize the form. WARNING: Do NOT modify this code. The
-     * content of this method is always regenerated by the Form Editor.
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
      */
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jLabel1 = new javax.swing.JLabel();
-        btnSearch = new javax.swing.JButton();
         txtSearchKey = new javax.swing.JTextField();
+        btnSearch = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
-        lstSearchResult = new javax.swing.JList<>();
-        btnPeersList = new javax.swing.JButton();
-        btnMoviesList = new javax.swing.JButton();
-        jScrollPane2 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
+        btnMoviesList = new javax.swing.JButton();
+        btnPeersList = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
+        chkAdvancedSearch = new javax.swing.JCheckBox();
+        lblHopCount = new javax.swing.JLabel();
+        txtHopCount = new javax.swing.JTextField();
+        lblTimeout = new javax.swing.JLabel();
+        txtTimeoutSec = new javax.swing.JTextField();
+        lblSec = new javax.swing.JLabel();
+        progressBar = new javax.swing.JProgressBar();
+        sliderHopCount = new javax.swing.JSlider();
+        sliderTimout = new javax.swing.JSlider();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Dashboard");
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
         });
 
-        jLabel1.setText("Movie Name:");
-
         btnSearch.setText("Search");
         btnSearch.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSearchActionPerformed(evt);
-            }
-        });
-
-        lstSearchResult.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
-        jScrollPane1.setViewportView(lstSearchResult);
-
-        btnPeersList.setText("Peers List");
-        btnPeersList.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnPeersListActionPerformed(evt);
-            }
-        });
-
-        btnMoviesList.setText("My Movies List");
-        btnMoviesList.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnMoviesListActionPerformed(evt);
             }
         });
 
@@ -173,10 +140,67 @@ public class DashboardForm extends javax.swing.JFrame {
                 {null, null, null, null}
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
+                "Peer", "Hop Count", "Movie", "Ratings"
             }
         ));
-        jScrollPane2.setViewportView(jTable1);
+        jScrollPane1.setViewportView(jTable1);
+
+        btnMoviesList.setText("Movies List");
+        btnMoviesList.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMoviesListActionPerformed(evt);
+            }
+        });
+
+        btnPeersList.setText("Peers List");
+        btnPeersList.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPeersListActionPerformed(evt);
+            }
+        });
+
+        jLabel1.setText("Movie Name:");
+
+        chkAdvancedSearch.setText("Enable Advanced Search");
+        chkAdvancedSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                chkAdvancedSearchActionPerformed(evt);
+            }
+        });
+
+        lblHopCount.setLabelFor(txtHopCount);
+        lblHopCount.setText("Hop Count:");
+
+        txtHopCount.setEditable(false);
+        txtHopCount.setText("2");
+        txtHopCount.setToolTipText("");
+
+        lblTimeout.setLabelFor(txtTimeoutSec);
+        lblTimeout.setText("Timeout:");
+
+        txtTimeoutSec.setEditable(false);
+        txtTimeoutSec.setText("5");
+
+        lblSec.setText("sec");
+
+        sliderHopCount.setMaximum(20);
+        sliderHopCount.setMinimum(2);
+        sliderHopCount.setValue(2);
+        sliderHopCount.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                sliderHopCountStateChanged(evt);
+            }
+        });
+
+        sliderTimout.setMaximum(60);
+        sliderTimout.setMinimum(5);
+        sliderTimout.setMinorTickSpacing(5);
+        sliderTimout.setValue(5);
+        sliderTimout.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                sliderTimoutStateChanged(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -184,49 +208,93 @@ public class DashboardForm extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 557, javax.swing.GroupLayout.PREFERRED_SIZE))
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(txtSearchKey, javax.swing.GroupLayout.PREFERRED_SIZE, 468, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnSearch))
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 557, javax.swing.GroupLayout.PREFERRED_SIZE)))
-            .addGroup(layout.createSequentialGroup()
-                .addGap(315, 315, 315)
-                .addComponent(btnMoviesList)
-                .addGap(18, 18, 18)
-                .addComponent(btnPeersList))
+                    .addComponent(progressBar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(txtSearchKey)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnSearch))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addComponent(lblHopCount)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(sliderHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, 170, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(lblTimeout)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtTimeoutSec, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(5, 5, 5)
+                                .addComponent(lblSec)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(sliderTimout, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(5, 5, 5))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addComponent(btnMoviesList)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnPeersList))))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(chkAdvancedSearch)
+                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(28, 28, 28)
+                .addGap(10, 10, 10)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnSearch)
-                    .addComponent(jLabel1)
-                    .addComponent(txtSearchKey, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 52, Short.MAX_VALUE)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 190, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtSearchKey, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 281, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(chkAdvancedSearch)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(lblHopCount)
+                        .addComponent(txtHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblTimeout)
+                        .addComponent(txtTimeoutSec, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblSec))
+                    .addComponent(sliderHopCount, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(sliderTimout, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnMoviesList)
-                    .addComponent(btnPeersList))
-                .addContainerGap(7, Short.MAX_VALUE))
+                    .addComponent(btnPeersList)
+                    .addComponent(btnMoviesList))
+                .addGap(0, 0, 0))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchActionPerformed
+        int hopCount = DEFAULT_SEARCH_HOPE_COUNT;
+        int timeout = DEFAULT_SEARCH_TIMEOUT_SEC;
+
+        if(advancedSearchEnabled){
+            try{
+                hopCount = Integer.parseInt(txtHopCount.getText());
+                timeout = Integer.parseInt(txtTimeoutSec.getText());
+            }catch (NumberFormatException e){
+                JOptionPane.showMessageDialog(this, "Default search options will be used", "Invalid Search Options!", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
         Store store = Store.getInstance();
         String key = txtSearchKey.getText();
         SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(),
-                                                        key, 2, localPeer);
+            key, hopCount, localPeer);
         store.setMySearchRequest(searchRequest);
         store.addSearchRequest(searchRequest);
         store.setSearchResults(new ArrayList<>());
@@ -238,47 +306,69 @@ public class DashboardForm extends javax.swing.JFrame {
         for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
             Peer peer = entry.getValue();
             MessageUtils.sendUDPMessage(peer.getIp(),
-                                        peer.getPort(),
-                                        "SER " + localPeer.getIp() + " " + localPeer.getPort()
-                                                + " \"" + key + "\" 2");
+                peer.getPort(),
+                "SER " + localPeer.getIp() + " " + localPeer.getPort()
+                + " \"" + key + "\" 2");
         }
         Runnable resultTask = () -> {
             List<SearchResult> searchResults = Store.getInstance().getSearchResults();
             if (searchResults != null) {
-                DefaultListModel listModel = new DefaultListModel();
-                listModel.addElement("Peer\t\t\t\t|Hops\t|Count\t|Files");
-                for (SearchResult searchResult : searchResults) {
-                    String resultStr = "";
+                //                Object[][] data = new Object[searchResults.size()][4];
+                DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+                model.setRowCount(0);
+                for(int i=0; i < searchResults.size(); i++){
+                    Object[] data = new Object[MAX_COLS];
+                    SearchResult searchResult = searchResults.get(i);
                     Peer peer = searchResult.getPeerWithResults();
-                    resultStr += peer.getIp() + ":" + peer.getPort() + "\t ";
-                    resultStr +=searchResult.getHopCount() + "\t\t ";
-                    resultStr +=searchResult.getResults().size() + "\t\t ";
-                    String files = "";
+                    data[0] = peer.getIp() + ":" + peer.getPort();
+                    data[1] = searchResult.getHopCount();
+                    data[3] = new StarRater(5, 2, 1);
                     for (String fileName : searchResult.getResults()) {
-                        files += fileName + " ";
+                        data[2] = fileName;
+                        model.addRow(data);
                     }
-                    resultStr += files;
-                    listModel.addElement(resultStr);
                 }
-                lstSearchResult.setModel(listModel);
+                jTable1.setModel(model);
+                model.fireTableDataChanged();
             }
+            btnSearch.setEnabled(true);
         };
-        int delay = 5;
+        btnSearch.setEnabled(false);
+        jTable1.setVisible(true);
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.schedule(resultTask, delay, TimeUnit.SECONDS);
+        scheduler.schedule(resultTask, timeout, TimeUnit.SECONDS);
+        resetAndStartProgress(timeout);
     }//GEN-LAST:event_btnSearchActionPerformed
+
+    private void btnMoviesListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMoviesListActionPerformed
+        new PeersListForm().setVisible(true);
+    }//GEN-LAST:event_btnMoviesListActionPerformed
+
+    private void btnPeersListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPeersListActionPerformed
+        new MyMoviesListForm().setVisible(true);
+    }//GEN-LAST:event_btnPeersListActionPerformed
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         performExit();
     }//GEN-LAST:event_formWindowClosing
 
-    private void btnPeersListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        new PeersListForm().setVisible(true);
-    }//GEN-LAST:event_jButton1ActionPerformed
+    private void chkAdvancedSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chkAdvancedSearchActionPerformed
+        if(!advancedSearchEnabled){
+            advancedSearchEnabled = true;
+            setVisibleAdvancedSearchPanel(true);
+        }else {
+            advancedSearchEnabled = false;
+            setVisibleAdvancedSearchPanel(false);
+        }
+    }//GEN-LAST:event_chkAdvancedSearchActionPerformed
 
-    private void btnMoviesListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        new MyMoviesListForm().setVisible(true);
-    }//GEN-LAST:event_jButton2ActionPerformed
+    private void sliderHopCountStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_sliderHopCountStateChanged
+        txtHopCount.setText(String.valueOf(sliderHopCount.getValue()));
+    }//GEN-LAST:event_sliderHopCountStateChanged
+
+    private void sliderTimoutStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_sliderTimoutStateChanged
+        txtTimeoutSec.setText(String.valueOf(sliderTimout.getValue()));
+    }//GEN-LAST:event_sliderTimoutStateChanged
 
     private void performExit() {
         Store store = Store.getInstance();
@@ -293,92 +383,148 @@ public class DashboardForm extends javax.swing.JFrame {
                                     "UNREG " + localPeer.getIp() + " " + localPeer.getPort() + " " + uuid);
     }
 
+    private void resetAndStartProgress(int durationSec){
+        int maxValue = durationSec * 1000;
+        progressBar.setMinimum(0);
+        progressBar.setMaximum(maxValue);
+        progressBar.setValue(0);
+        progressBar.setVisible(true);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int count = 0;
+                while(count < maxValue) {
+                    count = count + 100;
+                    progressBar.setValue(count);
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        //do nothing
+                    }
+                }
+                progressBar.setVisible(false);
+            }
+        }).start();
+    }
+
+    private void setVisibleAdvancedSearchPanel(boolean visibility){
+        lblHopCount.setVisible(visibility);
+        txtHopCount.setVisible(visibility);
+        lblTimeout.setVisible(visibility);
+        txtTimeoutSec.setVisible(visibility);
+        lblSec.setVisible(visibility);
+        sliderHopCount.setVisible(visibility);
+        sliderTimout.setVisible(visibility);
+    }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(DashboardForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(DashboardForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(DashboardForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(DashboardForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new DashboardForm().setVisible(true);
+            }
+        });
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btnSearch;
-    private javax.swing.JButton btnPeersList;
     private javax.swing.JButton btnMoviesList;
+    private javax.swing.JButton btnPeersList;
+    private javax.swing.JButton btnSearch;
+    private javax.swing.JCheckBox chkAdvancedSearch;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
-    private javax.swing.JList<String> lstSearchResult;
+    private javax.swing.JLabel lblHopCount;
+    private javax.swing.JLabel lblSec;
+    private javax.swing.JLabel lblTimeout;
+    private javax.swing.JProgressBar progressBar;
+    private javax.swing.JSlider sliderHopCount;
+    private javax.swing.JSlider sliderTimout;
+    private javax.swing.JTextField txtHopCount;
     private javax.swing.JTextField txtSearchKey;
+    private javax.swing.JTextField txtTimeoutSec;
     // End of variables declaration//GEN-END:variables
 }
 
-class TableRow {
-    public final String state;
-    public final int value;
 
-    public TableRow(String state, int value) {
-        this.state = state;
-        this.value = value;
-    }
-}
-
-class RowPanel extends JPanel {
+class StarRatingsPanel extends JPanel {
     private static String DEFAULT = "0";
-    public final JLabel label = new JLabel("lll");
-    public final StarRater starRater = new StarRater(5, 2, 1);
+    protected final StarRater starRater = new StarRater(5, 2, 1);
 
-    public RowPanel() {
-        super(new BorderLayout(5, 5));
+    public StarRatingsPanel() {
+        setLayout(new GridLayout());
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         starRater.addStarListener(
-                new StarRater.StarListener() {
-
-                    public void handleSelection(int selection) {
-                        System.out.println(selection);
-                    }
-                });
-
-        add(label, BorderLayout.WEST);
-        add(starRater, BorderLayout.EAST);
+                selection -> System.out.println(selection));
+        add(starRater);
     }
 
-    public void updateValue(TableRow bt) {
-        starRater.setRating(bt.value);
+    public void updateValue(StarRater bt) {
+        starRater.setRating(bt.getRating());
     }
 }
 
-class RowRenderer extends RowPanel implements TableCellRenderer {
-    public RowRenderer() {
+class StarRatingsRenderer extends StarRatingsPanel implements TableCellRenderer {
+    public static final DefaultTableCellRenderer DEFAULT_RENDERER = new DefaultTableCellRenderer();
+
+    public StarRatingsRenderer() {
         super();
         setName("Table.cellRenderer");
     }
 
     @Override
-    public Component getTableCellRendererComponent(
-            JTable table, Object value, boolean isSelected, boolean hasFocus,
-            int row, int column) {
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+                                                   int row, int column) {
         setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-        if (value instanceof TableRow) {
-            updateValue((TableRow) value);
-        }
+        updateValue((StarRater) value);
         return this;
     }
 }
 
-class RowEditor extends RowPanel implements TableCellEditor {
+class StarRatingsEditor extends StarRatingsPanel implements TableCellEditor {
     protected transient ChangeEvent changeEvent;
 
     @Override
     public Component getTableCellEditorComponent(
             JTable table, Object value, boolean isSelected, int row, int column) {
         this.setBackground(table.getSelectionBackground());
-        if (value instanceof TableRow) {
-            updateValue((TableRow) value);
-        }
+        updateValue((StarRater) value);
         return this;
     }
 
     @Override
     public Object getCellEditorValue() {
-        return new TableRow(label.getText(), starRater.getSelection());
+        return starRater;
     }
 
-    //Copied from AbstractCellEditor
-    //protected EventListenerList listenerList = new EventListenerList();
     @Override
     public boolean isCellEditable(EventObject e) {
         return true;
