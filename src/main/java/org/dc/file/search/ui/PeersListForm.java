@@ -15,7 +15,7 @@ import javax.swing.*;
 public class PeersListForm extends javax.swing.JFrame {
 
     /**
-     * Creates new form MyMoviesListFormNew
+     * Creates new form MyFilesListFormNew
      */
     public PeersListForm() {
         initComponents();
@@ -41,7 +41,7 @@ public class PeersListForm extends javax.swing.JFrame {
         btnClose = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle("My Movies");
+        setTitle("My Files");
 
         list.setModel(new javax.swing.AbstractListModel<String>() {
             String[] strings = {"Item 1", "Item 2", "Item 3", "Item 4", "Item 5"};

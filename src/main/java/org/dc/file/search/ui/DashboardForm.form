@@ -58,7 +58,7 @@
                               <EmptySpace min="-2" pref="5" max="-2" attributes="0"/>
                           </Group>
                           <Group type="102" alignment="1" attributes="0">
-                              <Component id="btnMoviesList" min="-2" max="-2" attributes="0"/>
+                              <Component id="btnFilesList" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="btnPeersList" min="-2" max="-2" attributes="0"/>
                           </Group>
@@ -103,7 +103,7 @@
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="btnPeersList" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="btnMoviesList" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="btnFilesList" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace min="0" pref="0" max="-2" attributes="0"/>
           </Group>
@@ -134,7 +134,7 @@
               <Table columnCount="4" rowCount="4">
                 <Column editable="true" title="Peer" type="java.lang.Object"/>
                 <Column editable="true" title="Hop Count" type="java.lang.Object"/>
-                <Column editable="true" title="Movie" type="java.lang.Object"/>
+                <Column editable="true" title="File" type="java.lang.Object"/>
                 <Column editable="true" title="Ratings" type="java.lang.Object"/>
               </Table>
             </Property>
@@ -142,12 +142,12 @@
         </Component>
       </SubComponents>
     </Container>
-    <Component class="javax.swing.JButton" name="btnMoviesList">
+    <Component class="javax.swing.JButton" name="btnFilesList">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Movies List"/>
+        <Property name="text" type="java.lang.String" value="Files List"/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnMoviesListActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnFilesListActionPerformed"/>
       </Events>
     </Component>
     <Component class="javax.swing.JButton" name="btnPeersList">
@@ -160,7 +160,7 @@
     </Component>
     <Component class="javax.swing.JLabel" name="jLabel1">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Movie Name:"/>
+        <Property name="text" type="java.lang.String" value="File Name:"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JCheckBox" name="chkAdvancedSearch">

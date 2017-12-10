@@ -7,16 +7,9 @@ package org.dc.file.search.ui;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.Enumeration;
-import java.util.List;
 import javax.swing.JOptionPane;
 import org.apache.commons.lang.RandomStringUtils;
+import org.dc.file.search.Constants.MessageType;
 import org.dc.file.search.MessageUtils;
 import org.dc.file.search.Peer;
 import org.dc.file.search.ResponseHandler;
@@ -35,7 +28,7 @@ public class SettingsForm extends javax.swing.JFrame {
         initComponents();
         setLocationRelativeTo(null);
         try {
-            txtServerIP.setText(getLocalHostIP());
+            txtServerIP.setText(MessageUtils.getLocalHostIP());
         } catch (ConnectException e) {
             //do nothing
         }
@@ -156,7 +149,7 @@ public class SettingsForm extends javax.swing.JFrame {
             Peer localPeer = MessageUtils.init(uuid);
             MessageUtils.sendTCPMessage(store.getServerIp(),
                                         store.getServerPort(),
-                                        "REG " + localPeer.getIp() + " " + localPeer.getPort() + " " + uuid,
+                                        MessageType.REG + " " + localPeer.getIp() + " " + localPeer.getPort() + " " + uuid,
                                         responseHandler);
             store.setLocalPeer(localPeer);
         } catch (IOException e) {
@@ -171,32 +164,6 @@ public class SettingsForm extends javax.swing.JFrame {
         System.exit(0);
     }//GEN-LAST:event_btnExitActionPerformed
 
-    private static String getLocalHostIP() throws ConnectException {
-        System.setProperty("java.net.preferIPv4Stack", "true");
-        try {
-            Enumeration list = NetworkInterface.getNetworkInterfaces();
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            InetAddress localIp = InetAddress.getLocalHost();
-            String hostAddress = localIp.getHostAddress();
-            while (interfaces.hasMoreElements()) {
-                NetworkInterface interf = interfaces.nextElement();
-                if (interf.isUp() && !interf.isLoopback()) {
-                    List<InterfaceAddress> adrs = interf.getInterfaceAddresses();
-                    for (InterfaceAddress adr : adrs) {
-                        InetAddress inadr = adr.getAddress();
-                        if (inadr instanceof Inet4Address) {
-                            hostAddress = inadr.getHostAddress();
-                        }
-                    }
-                }
-            }
-            return hostAddress;
-        } catch (SocketException e) {
-            throw new ConnectException("Cannot read local interfaces.");
-        } catch (UnknownHostException e){
-            throw new ConnectException("Cannot not find local interface address.");
-        }
-    }
     /**
      * @param args the command line arguments
      */

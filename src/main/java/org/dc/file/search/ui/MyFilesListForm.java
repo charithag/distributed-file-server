@@ -15,12 +15,12 @@ import javax.swing.*;
  *
  * @author rasikaperera
  */
-public class MyMoviesListForm extends javax.swing.JFrame {
+public class MyFilesListForm extends javax.swing.JFrame {
 
     /**
-     * Creates new form MyMoviesListFormNew
+     * Creates new form MyFilesListFormNew
      */
-    public MyMoviesListForm() {
+    public MyFilesListForm() {
         initComponents();
         setLocationRelativeTo(null);
         Store store = Store.getInstance();
@@ -46,7 +46,7 @@ public class MyMoviesListForm extends javax.swing.JFrame {
         btnClose = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle("My Movies");
+        setTitle("My Files");
 
         list.setModel(new javax.swing.AbstractListModel<String>() {
             String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
@@ -107,21 +107,23 @@ public class MyMoviesListForm extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(MyMoviesListForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MyFilesListForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(MyMoviesListForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MyFilesListForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(MyMoviesListForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MyFilesListForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(MyMoviesListForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MyFilesListForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
+        //</editor-fold>
         //</editor-fold>
         //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new MyMoviesListForm().setVisible(true);
+                new MyFilesListForm().setVisible(true);
             }
         });
     }

@@ -1,5 +1,7 @@
 package org.dc.file.search;
 
+import org.dc.file.search.Constants.MessageType;
+
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -14,6 +16,7 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -58,24 +61,34 @@ public class MessageUtils {
                 e.printStackTrace();
             }
         }).start();
-        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-        InetAddress localIp = InetAddress.getLocalHost();
-        String hostAddress = localIp.getHostAddress();
-        while (interfaces.hasMoreElements()) {
-            NetworkInterface interf = interfaces.nextElement();
-            if (interf.isUp() && !interf.isLoopback()) {
-                List<InterfaceAddress> adrs = interf.getInterfaceAddresses();
-                for (InterfaceAddress adr : adrs) {
-                    InetAddress inadr = adr.getAddress();
-                    if (inadr instanceof Inet4Address) {
-                        hostAddress = inadr.getHostAddress();
-                        System.out.println("Updated host address: " + hostAddress);
+        localPeer = new Peer(username, getLocalHostIP(), port);
+        return localPeer;
+    }
+
+    public static String getLocalHostIP() throws ConnectException {
+        System.setProperty("java.net.preferIPv4Stack", "true");
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            InetAddress localIp = InetAddress.getLocalHost();
+            String hostAddress = localIp.getHostAddress();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface interf = interfaces.nextElement();
+                if (interf.isUp() && !interf.isLoopback()) {
+                    List<InterfaceAddress> adrs = interf.getInterfaceAddresses();
+                    for (InterfaceAddress adr : adrs) {
+                        InetAddress inadr = adr.getAddress();
+                        if (inadr instanceof Inet4Address) {
+                            hostAddress = inadr.getHostAddress();
+                        }
                     }
                 }
             }
+            return hostAddress;
+        } catch (SocketException e) {
+            throw new ConnectException("Cannot read local interfaces.");
+        } catch (UnknownHostException e){
+            throw new ConnectException("Cannot not find local interface address.");
         }
-        localPeer = new Peer(hostAddress, port);
-        return localPeer;
     }
 
     public static void sendTCPMessage(final String destinationIp, final int destinationPort, final String message) {
@@ -127,7 +140,7 @@ public class MessageUtils {
                 clientSocket.send(sendPacket);
                 clientSocket.close();
             } catch (IOException e) {
-                Peer peer = new Peer(destinationIp, destinationPort);
+                Peer peer = new Peer(username, destinationIp, destinationPort);
                 System.err.println("Unable to connect with remote " + peer.getKey() + ". " + e.getMessage());
                 Store store = Store.getInstance();
                 store.removePeer(peer);
@@ -146,10 +159,10 @@ public class MessageUtils {
         Store store = Store.getInstance();
         Peer peer;
         switch (data[1]) {
-            case "REGOK":
+            case MessageType.REGOK:
                 addToNeighboursList(data);
                 break;
-            case "UNROK":
+            case MessageType.UNROK:
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
@@ -158,35 +171,35 @@ public class MessageUtils {
                 System.out.println("******* Terminating Peer ********");
                 System.exit(0);
                 break;
-            case "JOIN":
-                peer = new Peer(data[2], Integer.parseInt(data[3]));
+            case MessageType.JOIN:
+                peer = new Peer(username, data[2], Integer.parseInt(data[3]));
                 store.addPeer(peer);
-                sendUDPMessage(peer.getIp(), peer.getPort(), "JOINOK 0");
+                sendUDPMessage(peer.getIp(), peer.getPort(), MessageType.JOINOK + " 0");
                 break;
-            case "JOINOK":
+            case MessageType.JOINOK:
                 if (data[2].equals("0")) {
                     System.out.println("Successfully joined with a peer");
                 } else {
                     System.err.println("Join failed");
                 }
                 break;
-            case "LEAVE":
-                peer = new Peer(data[2], Integer.parseInt(data[3]));
+            case MessageType.LEAVE:
+                peer = new Peer(username, data[2], Integer.parseInt(data[3]));
                 store = Store.getInstance();
                 store.removePeer(peer);
-                sendUDPMessage(peer.getIp(), peer.getPort(), "LEAVEOK 0");
+                sendUDPMessage(peer.getIp(), peer.getPort(), MessageType.LEAVEOK + " 0");
                 break;
-            case "LEAVEOK":
+            case MessageType.LEAVEOK:
                 if (data[2].equals("0")) {
                     System.out.println("Successfully disconnected form peer");
                 } else {
                     System.err.println("Leave failed");
                 }
                 break;
-            case "SER":
+            case MessageType.SER:
                 searchFile(response, data);
                 break;
-            case "SEROK":
+            case MessageType.SEROK:
                 int resultCode = Integer.parseInt(data[2]);
                 if (resultCode < 9998) {
                     addSearchResult(response, data);
@@ -208,7 +221,7 @@ public class MessageUtils {
         } catch (NumberFormatException ignored) {
         }
         String query = response.substring(response.indexOf('"') + 1, response.lastIndexOf('"'));
-        peer = new Peer(data[2], Integer.parseInt(data[3]));
+        peer = new Peer(username, data[2], Integer.parseInt(data[3]));
         SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(), query, --hopCount,
                                                         peer);
         if (store.addSearchRequest(searchRequest)) {
@@ -218,7 +231,7 @@ public class MessageUtils {
                     if (!remotePeer.getKey().equals(peer.getKey())) {
                         MessageUtils.sendUDPMessage(remotePeer.getIp(),
                                                     remotePeer.getPort(),
-                                                    "SER " + peer.getIp() + " " + peer.getPort() + " \"" +
+                                                    MessageType.SER + " " + peer.getIp() + " " + peer.getPort() + " \"" +
                                                             searchRequest.getSearchKey()
                                                             + "\" " + hopCount);
                     }
@@ -231,7 +244,7 @@ public class MessageUtils {
                 for (String result : results) {
                     resultMsg += " " + result;
                 }
-                sendUDPMessage(peer.getIp(), peer.getPort(), "SEROK " + resultMsg);
+                sendUDPMessage(peer.getIp(), peer.getPort(), MessageType.SEROK + " " + resultMsg);
             }
         } else {
             System.out.println("Ignoring duplicate request.");
@@ -257,7 +270,7 @@ public class MessageUtils {
                 }
             }
         }
-        Peer peer = new Peer(data[3], Integer.parseInt(data[4]));
+        Peer peer = new Peer(username, data[3], Integer.parseInt(data[4]));
         int hopCount = store.getMySearchRequest().getHopCount() - Integer.parseInt(data[5]);
         SearchResult searchResult = new SearchResult(key, peer, hopCount, results);
         store.addSearchResult(searchResult);
@@ -274,12 +287,12 @@ public class MessageUtils {
             while (rnd1 == rnd2 && peerCount > 1) {
                 rnd2 = getRandom(peerCount) * 3;
             }
-            Peer peer1 = new Peer(data[rnd1], Integer.parseInt(data[rnd1 + 1]));
-            String joinMsg = "JOIN " + localPeer.getIp() + " " + localPeer.getPort();
+            Peer peer1 = new Peer(username, data[rnd1], Integer.parseInt(data[rnd1 + 1]));
+            String joinMsg = MessageType.JOIN + " " + localPeer.getIp() + " " + localPeer.getPort();
             sendUDPMessage(peer1.getIp(), peer1.getPort(), joinMsg);
             store.addPeer(peer1);
             if (peerCount > 1) {
-                Peer peer2 = new Peer(data[rnd2], Integer.parseInt(data[rnd2 + 1]));
+                Peer peer2 = new Peer(username, data[rnd2], Integer.parseInt(data[rnd2 + 1]));
                 sendUDPMessage(peer2.getIp(), peer2.getPort(), joinMsg);
                 store.addPeer(peer2);
             }
@@ -291,14 +304,14 @@ public class MessageUtils {
             System.err.println("Peer already registered");
             sendTCPMessage(store.getServerIp(),
                            store.getServerPort(),
-                           "UNREG " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
+                           MessageType.UNREG + " " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException ignored) {
             }
             sendTCPMessage(store.getServerIp(),
                            store.getServerPort(),
-                           "REG " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
+                           MessageType.REG + " " + localPeer.getIp() + " " + localPeer.getPort() + " " + username);
         }
     }
 
