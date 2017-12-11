@@ -1,7 +1,7 @@
 package org.dc.file.search;
 
 public final class Constants {
-    public static final String[] FILES = {
+    private static final String[] FILES = {
             "Adventures of Tintin",
             "Jack and Jill",
             "Glee",
@@ -23,6 +23,10 @@ public final class Constants {
             "American Idol",
             "Hacking for Dummies"
     };
+
+    public static String[] getFiles(){
+        return FILES.clone();
+    }
 
     public static class MessageType{
         public static final String REG = "REG";
