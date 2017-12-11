@@ -239,12 +239,12 @@ public class MessageUtils {
             }
             List<String> results = store.findInFiles(searchRequest.getSearchKey());
             if (!results.isEmpty()) {
-                String resultMsg =
-                        results.size() + " " + localPeer.getIp() + " " + localPeer.getPort() + " " + hopCount + " ";
+                StringBuilder resultMsg =
+                        new StringBuilder(results.size() + " " + localPeer.getIp() + " " + localPeer.getPort() + " " + hopCount + " ");
                 for (String result : results) {
-                    resultMsg += " " + result;
+                    resultMsg.append(" ").append(result);
                 }
-                sendUDPMessage(peer.getIp(), peer.getPort(), MessageType.SEROK + " " + resultMsg);
+                sendUDPMessage(peer.getIp(), peer.getPort(), MessageType.SEROK + " " + resultMsg.toString());
             }
         } else {
             System.out.println("Ignoring duplicate request.");
@@ -300,7 +300,7 @@ public class MessageUtils {
             System.err.println("Bootstrap server already filled");
         } else if (peerCount == 9998) {
             System.err.println("Server error");
-        } else if (peerCount < 9999) {
+        } else if (peerCount == 9999) {
             System.err.println("Peer already registered");
             sendTCPMessage(store.getServerIp(),
                            store.getServerPort(),

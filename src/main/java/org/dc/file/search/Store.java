@@ -11,24 +11,24 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Store {
 
     private static final Object LOCK = new Object();
-    private static Store store;
-    private static List<String> fileNames;
-    private static volatile Map<String, Peer> peerMap;
-    private static volatile Map<String, SearchRequest> searchRequestMap;
+    private static final Store INSTANCE = new Store();
+    private static List<String> fileNames = new ArrayList<>();
+    private static volatile Map<String, Peer> peerMap = new HashMap<>();
+    private static volatile Map<String, SearchRequest> searchRequestMap = new HashMap<>();
     private volatile SearchRequest mySearchRequest;
     private volatile List<SearchResult> searchResults;
     private int serverPort;
     private String serverIp;
     private Peer localPeer;
+    private long logicalClock;
 
     private Store() {
-        peerMap = new HashMap<>();
-        fileNames = new ArrayList<>();
-        searchRequestMap = new HashMap<>();
+        logicalClock = 0L;
         int fileCount = ThreadLocalRandom.current().nextInt(3, 5);
+        String[] files = Constants.getFiles();
         while (fileCount > 0) {
-            int fileIndex = ThreadLocalRandom.current().nextInt(0, Constants.FILES.length - 1);
-            String file = Constants.FILES[fileIndex];
+            int fileIndex = ThreadLocalRandom.current().nextInt(0, files.length - 1);
+            String file = files[fileIndex];
             if (!fileNames.contains(file)) {
                 fileNames.add(file);
                 fileCount--;
@@ -55,11 +55,16 @@ public class Store {
         }).start();
     }
 
+    public long getLogicalClock() {
+        return logicalClock;
+    }
+
+    public void adjustLogicalClock(long externalClock){
+        this.logicalClock = ((logicalClock < externalClock) ? externalClock : logicalClock) + 1;
+    }
+
     public static Store getInstance() {
-        if (store == null) {
-            store = new Store();
-        }
-        return store;
+        return INSTANCE;
     }
 
     public String getServerIp(){
@@ -116,12 +121,12 @@ public class Store {
     }
 
     public void displayPeerList() {
-        String list = "\n=========== Peers List ===========\n";
+        StringBuilder list = new StringBuilder("\n=========== Peers List ===========\n");
         for (Map.Entry<String, Peer> entry : peerMap.entrySet()) {
             Peer peer = entry.getValue();
-            list += "Peer IP: " + peer.getIp() + " Port: " + peer.getPort() + "\n";
+            list.append("Peer IP: ").append(peer.getIp()).append(" Port: ").append(peer.getPort()).append("\n");
         }
-        System.out.println(list + "==================================");
+        System.out.println(list.append("==================================").toString());
     }
 
     public Peer getLocalPeer() {
@@ -134,12 +139,12 @@ public class Store {
 
     public List<String> findInFiles(String key) {
         List<String> results = new ArrayList<>();
-        String list = "\n=========== Local Search Results ===========\n";
+        StringBuilder list = new StringBuilder("\n=========== Local Search Results ===========\n");
         for (String fileName : fileNames) {
             if (fileName.toUpperCase().contains(key.toUpperCase())) {
                 if (fileName.equalsIgnoreCase(key)) {
                     results.add(fileName);
-                    list += fileName + "\n";
+                    list.append(fileName).append("\n");
                 } else {
                     String[] fileNameParts = fileName.split(" ");
                     String[] keyParts = key.split(" ");
@@ -152,7 +157,7 @@ public class Store {
                         }
                         if (hasPart) {
                             results.add("\"" + fileName + "\"");
-                            list += fileName + "\n";
+                            list.append(fileName).append("\n");
                         }
                     }
                 }
@@ -163,11 +168,11 @@ public class Store {
     }
 
     public void displayFilesList() {
-        String list = "\n=========== Files List ===========\n";
+        StringBuilder list = new StringBuilder("\n=========== Files List ===========\n");
         for (String fileName : fileNames) {
-            list += fileName + "\n";
+            list.append(fileName).append("\n");
         }
-        System.out.println(list + "==================================");
+        System.out.println(list.append("=================================="));
     }
 
     public List<String> getFilesList() {
@@ -181,28 +186,27 @@ public class Store {
     }
 
     public void displaySearchRequestsList() {
-        String list = "\n=========== Search Requests List ===========\n";
+        StringBuilder list = new StringBuilder("\n=========== Search Requests List ===========\n");
         for (Map.Entry<String, SearchRequest> entry : searchRequestMap.entrySet()) {
-            list += "Peer: " + entry.getValue().getPeer().getKey() + " Key: " + entry.getValue().getSearchKey() + "\n";
+            list.append("Peer: ").append(entry.getValue().getPeer().getKey()).append(" Key: ").append(entry.getValue().getSearchKey()).append("\n");
         }
-        System.out.println(list + "============================================");
+        System.out.println(list.append("============================================"));
     }
 
     public void displaySearchResults() {
-        String list = "\n=========== Search Results ===========\n" +
-                      "Search Key:" + mySearchRequest.getSearchKey()
-                      + "\nPeer\t\t\t\t|Hops\t|Count\t|Files\n";
+        StringBuilder list = new StringBuilder("\n=========== Search Results ===========\n").append(
+                "Search Key:").append(mySearchRequest.getSearchKey()).append("\nPeer\t\t\t\t|Hops\t|Count\t|Files\n");
         for (SearchResult result : searchResults) {
             Peer peer = result.getPeerWithResults();
-            list += peer.getIp() + ":" + peer.getPort() + "\t ";
-            list += result.getHopCount() + "\t\t ";
-            list += result.getResults().size() + "\t\t ";
+            list.append(peer.getIp()).append(":").append(peer.getPort()).append("\t ");
+            list.append(result.getHopCount()).append("\t\t ");
+            list.append(result.getResults().size()).append("\t\t ");
             for (String fileName : result.getResults()) {
-                list += fileName + " ";
+                list.append(fileName).append(" ");
             }
-            list += "\n";
+            list.append("\n");
         }
-        System.out.println(list + "======================================");
+        System.out.println(list.append("======================================"));
     }
 
 }
