@@ -82,8 +82,10 @@ public class DashboardForm extends javax.swing.JFrame {
         starRatingsColumn.setCellEditor(new StarRatingsEditor());
         starRatingsColumn.setPreferredWidth(30);
         
+        //Object test[][] = {{"test", new StarRater(5, 2, 1), new JButton("Reply")}};
         DefaultTableModel commentModel = new DefaultTableModel(data, commentColumnNames);
         tblComments.setModel(commentModel);
+        tblComments.setRowHeight(32);
 
         TableColumn commentRatingColumn = tblComments.getColumnModel().getColumn(COMMENT_RATING_COL_INDEX);
         commentRatingColumn.setCellRenderer(new StarRatingsRenderer());
