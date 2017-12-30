@@ -11,10 +11,10 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Store {
 
     private static final Object LOCK = new Object();
-    private static final Store INSTANCE = new Store();
     private static List<String> fileNames = new ArrayList<>();
     private static volatile Map<String, Peer> peerMap = new HashMap<>();
     private static volatile Map<String, SearchRequest> searchRequestMap = new HashMap<>();
+    private static final Store INSTANCE = new Store();
     private volatile SearchRequest mySearchRequest;
     private volatile List<SearchResult> searchResults;
     private int serverPort;
