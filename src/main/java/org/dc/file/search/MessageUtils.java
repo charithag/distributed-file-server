@@ -311,6 +311,21 @@ public class MessageUtils {
         int hopCount = store.getMySearchRequest().getHopCount() - Integer.parseInt(data[5]);
         SearchResult searchResult = new SearchResult(key, peer, hopCount, results);
         store.addSearchResult(searchResult);
+        for (DFile resultFile : searchResult.getResults()) {
+            for (Rating rating : resultFile.getRatings()) {
+                store.addRating(rating);
+            }
+            for (Comment comment : resultFile.getComments()) {
+                store.addComment(comment);
+                List<Comment> replies = comment.getReplies();
+                for (Comment reply : replies) {
+                    store.addComment(reply);
+                }
+                for (Rating rating : comment.getRatings()) {
+                    store.addRating(rating);
+                }
+            }
+        }
     }
 
     private static void addToNeighboursList(String[] data) throws IOException {
