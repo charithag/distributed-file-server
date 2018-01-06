@@ -1,12 +1,16 @@
 package org.dc.file.search;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.dc.file.search.Constants.MessageType;
+import org.dc.file.search.dto.DFile;
 import org.dc.file.search.dto.Peer;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.net.ConnectException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -238,13 +242,11 @@ public class MessageUtils {
                     }
                 }
             }
-            List<String> results = store.findInFiles(searchRequest.getSearchKey());
+            List<DFile> results = store.findInFiles(searchRequest.getSearchKey());
             if (!results.isEmpty()) {
                 StringBuilder resultMsg =
                         new StringBuilder(results.size() + " " + localPeer.getIp() + " " + localPeer.getPort() + " " + hopCount + " ");
-                for (String result : results) {
-                    resultMsg.append(" ").append(result);
-                }
+                resultMsg.append(" ").append(new Gson().toJson(results));
                 sendUDPMessage(peer.getIp(), peer.getPort(), MessageType.SEROK + " " + resultMsg.toString());
             }
         } else {
@@ -256,20 +258,12 @@ public class MessageUtils {
         Store store = Store.getInstance();
         String key = store.getMySearchRequest().getSearchKey();
         int resultsCount = Integer.parseInt(data[2]);
-        List<String> results = new ArrayList<>();
+        List<DFile> results = new ArrayList<>();
         if (resultsCount > 0) {
-            String fileNamesString = response.substring(response.indexOf('"'), response.lastIndexOf('"') + 1);
-            results = Arrays.asList(fileNamesString.split("\" \""));
-            if (resultsCount != results.size()) {
-                System.err.println("Invalid results response");
-                return;
-            }
-            for (String result : results) {
-                if (!result.toUpperCase().contains(key.toUpperCase())) {
-                    System.err.println("Ignoring obsolete search result");
-                    return;
-                }
-            }
+            String resultJson = response.substring(response.indexOf('['), response.lastIndexOf(']') + 1);
+            Type listType = new TypeToken<List<DFile>>() {}.getType();
+            Gson gson = new Gson();
+            results = gson.fromJson(resultJson, listType);
         }
         Peer peer = new Peer(username, data[3], Integer.parseInt(data[4]));
         int hopCount = store.getMySearchRequest().getHopCount() - Integer.parseInt(data[5]);

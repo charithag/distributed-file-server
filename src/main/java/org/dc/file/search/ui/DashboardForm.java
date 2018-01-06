@@ -7,6 +7,7 @@ package org.dc.file.search.ui;
 
 import org.dc.file.search.Constants.MessageType;
 import org.dc.file.search.MessageUtils;
+import org.dc.file.search.dto.DFile;
 import org.dc.file.search.dto.Peer;
 import org.dc.file.search.SearchRequest;
 import org.dc.file.search.SearchResult;
@@ -357,7 +358,7 @@ public class DashboardForm extends javax.swing.JFrame {
         store.setMySearchRequest(searchRequest);
         store.addSearchRequest(searchRequest);
         store.setSearchResults(new ArrayList<>());
-        List<String> results = Store.getInstance().findInFiles(searchRequest.getSearchKey());
+        List<DFile> results = Store.getInstance().findInFiles(searchRequest.getSearchKey());
         if (!results.isEmpty()) {
             SearchResult searchResult = new SearchResult(key, localPeer, 0, results);
             store.addSearchResult(searchResult);
@@ -382,8 +383,8 @@ public class DashboardForm extends javax.swing.JFrame {
                     data[0] = peer.getKey();
                     data[1] = searchResult.getHopCount();
                     data[3] = new StarRater(5, 2, 1);
-                    for (String fileName : searchResult.getResults()) {
-                        data[2] = fileName;
+                    for (DFile dFile : searchResult.getResults()) {
+                        data[2] = dFile.getFileName();
                         model.addRow(data);
                     }
                 }

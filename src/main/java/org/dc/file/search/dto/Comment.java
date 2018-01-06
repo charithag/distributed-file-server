@@ -1,5 +1,6 @@
 package org.dc.file.search.dto;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Comment {
@@ -7,8 +8,8 @@ public class Comment {
     private String commentId;
     private long lamportTime;
     private String fileName;
-    private List<Comment> replies;
-    private List<Rating> ratings;
+    private List<Comment> replies = new ArrayList<>();
+    private List<Rating> ratings = new ArrayList<>();
 
     public String getCommentId() {
         return commentId;

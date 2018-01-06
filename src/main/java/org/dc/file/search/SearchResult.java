@@ -1,5 +1,6 @@
 package org.dc.file.search;
 
+import org.dc.file.search.dto.DFile;
 import org.dc.file.search.dto.Peer;
 
 import java.util.List;
@@ -9,9 +10,9 @@ public class SearchResult {
     private String searchKey;
     private Peer peerWithResults;
     private int hopCount;
-    private List<String> results;
+    private List<DFile> results;
 
-    public SearchResult(String searchKey, Peer peerWithResults, int hopCount, List<String> results) {
+    public SearchResult(String searchKey, Peer peerWithResults, int hopCount, List<DFile> results) {
         this.searchKey = searchKey;
         this.peerWithResults = peerWithResults;
         this.hopCount = hopCount;
@@ -42,11 +43,11 @@ public class SearchResult {
         this.hopCount = hopCount;
     }
 
-    public List<String> getResults() {
+    public List<DFile> getResults() {
         return results;
     }
 
-    public void setResults(List<String> results) {
+    public void setResults(List<DFile> results) {
         this.results = results;
     }
 }

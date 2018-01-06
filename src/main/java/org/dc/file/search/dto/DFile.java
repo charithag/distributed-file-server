@@ -1,12 +1,13 @@
 package org.dc.file.search.dto;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DFile {
 
     private String fileName;
-    private List<Comment> comments;
-    private List<Rating> ratings;
+    private List<Comment> comments = new ArrayList<>();
+    private List<Rating> ratings = new ArrayList<>();
 
     public String getFileName() {
         return fileName;
