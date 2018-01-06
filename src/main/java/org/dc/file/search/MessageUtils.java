@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken;
 import org.dc.file.search.Constants.MessageType;
 import org.dc.file.search.dto.DFile;
 import org.dc.file.search.dto.Peer;
+import org.dc.file.search.dto.Rating;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -34,6 +35,8 @@ public class MessageUtils {
 
     private static String username;
     private static Peer localPeer;
+
+    private static volatile List<String> processedMessages = new ArrayList<>();
 
     private MessageUtils() {
     }
@@ -190,7 +193,6 @@ public class MessageUtils {
                 break;
             case MessageType.LEAVE:
                 peer = new Peer(username, data[2], Integer.parseInt(data[3]));
-                store = Store.getInstance();
                 store.removePeer(peer);
                 sendUDPMessage(peer.getIp(), peer.getPort(), MessageType.LEAVEOK + " 0");
                 break;
@@ -213,7 +215,24 @@ public class MessageUtils {
                 }
                 break;
             case MessageType.RATE:
-                System.out.println(data.toString());
+                String ratingJSON = response.substring(response.indexOf('{'), response.lastIndexOf('}') + 1);
+                Type listType = new TypeToken<Rating>() {}.getType();
+                Gson gson = new Gson();
+                Rating rating = gson.fromJson(ratingJSON, listType);
+                if (!processedMessages.contains(rating.getRatingId())) {
+                    processedMessages.add(rating.getRatingId());
+                    store.getPeerList().forEach(stringPeerEntry -> {
+                        String peerIP = stringPeerEntry.getValue().getIp();
+                        int peerPort = stringPeerEntry.getValue().getPort();
+                        Peer originator = new Peer(username, data[2], Integer.parseInt(data[3]));
+                        MessageUtils.sendUDPMessage(peerIP,
+                                                    peerPort,
+                                                    MessageType.RATE + " " + originator.getIp() + " " +
+                                                    originator.getPort() + " " + ratingJSON);
+                    });
+                    store.addRating(rating);
+                }
+                break;
             default:
                 System.err.println("Invalid operation");
         }

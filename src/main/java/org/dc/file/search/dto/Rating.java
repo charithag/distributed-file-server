@@ -2,10 +2,19 @@ package org.dc.file.search.dto;
 
 public class Rating {
 
+    private String ratingId;
     private String fileName;
     private String commentId;
     private String userName;
     private int value;
+    
+    public String getRatingId() {
+        return ratingId;
+    }
+
+    public void setRatingId(String ratingId) {
+        this.ratingId = ratingId;
+    }
 
     public String getFileName() {
         return fileName;
@@ -38,4 +47,5 @@ public class Rating {
     public void setValue(int value) {
         this.value = value;
     }
+
 }

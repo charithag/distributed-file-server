@@ -5,6 +5,8 @@
  */
 package org.dc.file.search.ui;
 
+import com.google.gson.Gson;
+import org.apache.commons.lang.RandomStringUtils;
 import org.dc.file.search.Constants.MessageType;
 import org.dc.file.search.MessageUtils;
 import org.dc.file.search.SearchRequest;
@@ -12,6 +14,7 @@ import org.dc.file.search.SearchResult;
 import org.dc.file.search.Store;
 import org.dc.file.search.dto.DFile;
 import org.dc.file.search.dto.Peer;
+import org.dc.file.search.dto.Rating;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -23,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +40,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
 import static org.dc.file.search.ui.DashboardForm.FILE_COL_INDEX;
+import static org.dc.file.search.ui.DashboardForm.resultFiles;
 
 /**
  * @author rasikaperera
@@ -61,6 +66,8 @@ public class DashboardForm extends javax.swing.JFrame {
     private final String[] searchColumnNames = {"Peer", "Hop Count", "File", "Ratings"};
     private final String[] commentColumnNames = {"Comment", "Ratings", "Reply"};
     private Object[][] data = {};
+
+    static volatile Map<String, DFile> resultFiles;
 
     /**
      * Creates new form DashboardFormNew
@@ -374,6 +381,7 @@ public class DashboardForm extends javax.swing.JFrame {
         }
         Runnable resultTask = () -> {
             List<SearchResult> searchResults = Store.getInstance().getSearchResults();
+            resultFiles = new HashMap<>();
             if (searchResults != null) {
                 //                Object[][] data = new Object[searchResults.size()][4];
                 DefaultTableModel model = (DefaultTableModel) tblSearchResults.getModel();
@@ -387,6 +395,7 @@ public class DashboardForm extends javax.swing.JFrame {
                     data[3] = new StarRater(5, 2, 1);
                     for (DFile dFile : searchResult.getResults()) {
                         data[2] = dFile.getFileName();
+                        resultFiles.put(dFile.getFileName(), dFile);
                         model.addRow(data);
                     }
                 }
@@ -571,21 +580,43 @@ class StarRatingsPanel extends JPanel {
         starRater.addStarListener(
                 selection -> {
                     Map<String, Object> properties = starRater.getProperties();
-                    String _fileName = null;
+                    String fileName = null;
                     if (properties != null && !properties.isEmpty()) {
-                        _fileName = (String) properties.get("fileName");
+                        fileName = (String) properties.get("fileName");
                     }
-                    final String fileName = _fileName;
+
+                    String username = Store.getInstance().getLocalPeer().getUsername();
+
+                    DFile ratedFile = resultFiles.get(fileName);
+                    Rating rating = new Rating();
+                    rating.setFileName(fileName);
+                    rating.setRatingId(RandomStringUtils.randomAlphanumeric(8));
+                    rating.setUserName(username);
+                    rating.setValue(selection);
+
+                    List<Rating> fileRatings = ratedFile.getRatings();
+                    boolean isNotRated = true;
+                    for (Rating r :fileRatings) {
+                        if (r.getUserName().equals(username)){
+                            r.setValue(selection);
+                            isNotRated = false;
+                        }
+                    }
+                    if (isNotRated) {
+                        fileRatings.add(rating);
+                    }
+
+                    Store.getInstance().addRating(rating);
+
+                    final String ratingJSON = new Gson().toJson(rating);
                     store.getPeerList().forEach(stringPeerEntry -> {
                         String peerIP = stringPeerEntry.getValue().getIp();
                         int peerPort = stringPeerEntry.getValue().getPort();
                         Peer localPeer = store.getLocalPeer();
-
                         MessageUtils.sendUDPMessage(peerIP,
                                                     peerPort,
                                                     MessageType.RATE + " " + localPeer.getIp() + " " +
-                                                            localPeer.getPort() + " "
-                                                            + localPeer.getUsername() + " " + fileName);
+                                                            localPeer.getPort() + " " + ratingJSON);
                     });
                 });
         add(starRater);

@@ -1,7 +1,9 @@
 package org.dc.file.search;
 
+import org.dc.file.search.dto.Comment;
 import org.dc.file.search.dto.DFile;
 import org.dc.file.search.dto.Peer;
+import org.dc.file.search.dto.Rating;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -165,4 +167,36 @@ public class Store {
         }
     }
 
+    public void addRating(Rating rating) {
+        if (localFiles.containsKey(rating.getFileName())) {
+            DFile localFile = localFiles.get(rating.getFileName());
+            if (rating.getCommentId() != null && !rating.getCommentId().isEmpty()) {
+                Comment comment = null;
+                List<Comment> comments = localFile.getComments();
+                for (Comment cmnt: comments) {
+                    if (rating.getCommentId().equals(cmnt.getCommentId())){
+                        comment = cmnt;
+                        break;
+                    }
+                }
+                List<Rating> commentRating = comment.getRatings();
+                for (Rating r : commentRating) {
+                    if (r.getUserName().equals(rating.getUserName())) {
+                        commentRating.remove(r);
+                        break;
+                    }
+                }
+                commentRating.add(rating);
+            } else {
+                List<Rating> fileRatings = localFile.getRatings();
+                for (Rating r : fileRatings) {
+                    if (r.getUserName().equals(rating.getUserName())) {
+                        fileRatings.remove(r);
+                        break;
+                    }
+                }
+                fileRatings.add(rating);
+            }
+        }
+    }
 }
