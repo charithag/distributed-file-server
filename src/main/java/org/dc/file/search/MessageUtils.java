@@ -333,6 +333,26 @@ public class MessageUtils {
                 sendUDPMessage(peer2.getIp(), peer2.getPort(), joinMsg);
                 store.addPeer(peer2);
             }
+            store.setSearchResults(new ArrayList<>());
+            for (String localFile : store.getFilesList()) {
+                Peer localPeer = store.getLocalPeer();
+                SearchRequest searchRequest = new SearchRequest(Calendar.getInstance().getTimeInMillis(),
+                                                                localFile, 2, localPeer);
+                store.setMySearchRequest(searchRequest);
+                store.addSearchRequest(searchRequest);
+                for (Map.Entry<String, Peer> entry : Store.getInstance().getPeerMap().entrySet()) {
+                    Peer peer = entry.getValue();
+                    MessageUtils.sendUDPMessage(peer.getIp(),
+                                                peer.getPort(),
+                                                MessageType.SER + " " + localPeer.getIp() + " " + localPeer.getPort()
+                                                + " \"" + localFile + "\" 2");
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         } else if (peerCount == 9997) {
             System.err.println("Bootstrap server already filled");
         } else if (peerCount == 9998) {

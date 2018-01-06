@@ -117,6 +117,21 @@ public class Store {
 
     public void addSearchResult(SearchResult searchResult) {
         searchResults.add(searchResult);
+        for (DFile resultFile : searchResult.getResults()) {
+            for (Rating rating : resultFile.getRatings()) {
+                addRating(rating);
+            }
+            for (Comment comment : resultFile.getComments()) {
+                addComment(comment);
+                List<Comment> replies = comment.getReplies();
+                for (Comment reply : replies) {
+                    addComment(reply);
+                }
+                for (Rating rating : comment.getRatings()) {
+                    addRating(rating);
+                }
+            }
+        }
     }
 
     public Map<String, Peer> getPeerMap() {
