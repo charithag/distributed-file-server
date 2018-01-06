@@ -7,8 +7,9 @@ public class Comment {
 
     private String commentId;
     private String parentId;
-    private long lamportTime;
     private String fileName;
+    private String userName;
+    private String text;
     private List<Comment> replies = new ArrayList<>();
     private List<Rating> ratings = new ArrayList<>();
 
@@ -28,20 +29,28 @@ public class Comment {
         this.parentId = parentId;
     }
 
-    public long getLamportTime() {
-        return lamportTime;
-    }
-
-    public void setLamportTime(long lamportTime) {
-        this.lamportTime = lamportTime;
-    }
-
     public String getFileName() {
         return fileName;
     }
 
     public void setFileName(String fileName) {
         this.fileName = fileName;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
     }
 
     public List<Comment> getReplies() {

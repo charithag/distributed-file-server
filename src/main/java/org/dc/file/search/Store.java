@@ -204,7 +204,7 @@ public class Store {
         if (localFiles.containsKey(comment.getFileName())) {
             DFile localFile = localFiles.get(comment.getFileName());
             List<Comment> comments = localFile.getComments();
-            if (comment.getParentId() == null && comment.getParentId().isEmpty()) {
+            if (comment.getParentId() == null || comment.getParentId().isEmpty()) {
                 for (Comment cmnt : comments) {
                     if (comment.getCommentId().equals(cmnt.getCommentId())) {
                         return;

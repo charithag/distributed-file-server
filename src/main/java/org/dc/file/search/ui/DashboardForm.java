@@ -12,10 +12,19 @@ import org.dc.file.search.MessageUtils;
 import org.dc.file.search.SearchRequest;
 import org.dc.file.search.SearchResult;
 import org.dc.file.search.Store;
+import org.dc.file.search.dto.Comment;
 import org.dc.file.search.dto.DFile;
 import org.dc.file.search.dto.Peer;
 import org.dc.file.search.dto.Rating;
 
+import javax.swing.*;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -26,20 +35,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import javax.swing.*;
-import javax.swing.event.CellEditorListener;
-import javax.swing.event.ChangeEvent;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
 
-import static org.dc.file.search.ui.DashboardForm.FILE_COL_INDEX;
 import static org.dc.file.search.ui.DashboardForm.resultFiles;
 
 /**
@@ -448,7 +447,37 @@ public class DashboardForm extends javax.swing.JFrame {
 
     private void btnNewCommentActionPerformed(
             java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNewCommentActionPerformed
-        // TODO add your handling code here:
+        int row = tblSearchResults.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(null, "Please select a file first.");
+            return;
+        }
+        String fileName = tblSearchResults.getModel().getValueAt(row, 2).toString();
+        String commentString = JOptionPane.showInputDialog("Add comment for " + fileName);
+        if (commentString != null && !commentString.isEmpty()) {
+            String username = Store.getInstance().getLocalPeer().getUsername();
+            DFile commentedFile = resultFiles.get(fileName);
+            Comment comment = new Comment();
+            comment.setCommentId(RandomStringUtils.randomAlphanumeric(8));
+            comment.setFileName(fileName);
+            comment.setUserName(username);
+            comment.setText(commentString);
+
+            List<Comment> comments = commentedFile.getComments();
+            comments.add(comment);
+
+            Store.getInstance().addComment(comment);
+            final String commentJSON = new Gson().toJson(comment);
+            Store.getInstance().getPeerList().forEach(stringPeerEntry -> {
+                String peerIP = stringPeerEntry.getValue().getIp();
+                int peerPort = stringPeerEntry.getValue().getPort();
+                Peer localPeer = Store.getInstance().getLocalPeer();
+                MessageUtils.sendUDPMessage(peerIP,
+                                            peerPort,
+                                            MessageType.COMMENT + " " + localPeer.getIp() + " " +
+                                            localPeer.getPort() + " " + commentJSON);
+            });
+        }
     }//GEN-LAST:event_btnNewCommentActionPerformed
 
     private void performExit() {
@@ -473,21 +502,18 @@ public class DashboardForm extends javax.swing.JFrame {
         progressBar.setValue(0);
         progressBar.setVisible(true);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int count = 0;
-                while (count < maxValue) {
-                    count = count + 100;
-                    progressBar.setValue(count);
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        //do nothing
-                    }
+        new Thread(() -> {
+            int count = 0;
+            while (count < maxValue) {
+                count = count + 100;
+                progressBar.setValue(count);
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    //do nothing
                 }
-                progressBar.setVisible(false);
             }
+            progressBar.setVisible(false);
         }).start();
     }
 
@@ -499,46 +525,6 @@ public class DashboardForm extends javax.swing.JFrame {
         lblSec.setVisible(visibility);
         sliderHopCount.setVisible(visibility);
         sliderTimout.setVisible(visibility);
-    }
-
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(DashboardForm.class.getName()).log(java.util.logging.Level.SEVERE, null,
-                                                                                  ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(DashboardForm.class.getName()).log(java.util.logging.Level.SEVERE, null,
-                                                                                  ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(DashboardForm.class.getName()).log(java.util.logging.Level.SEVERE, null,
-                                                                                  ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(DashboardForm.class.getName()).log(java.util.logging.Level.SEVERE, null,
-                                                                                  ex);
-        }
-        //</editor-fold>
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new DashboardForm().setVisible(true);
-            }
-        });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -585,7 +571,6 @@ class StarRatingsPanel extends JPanel {
                     }
 
                     String username = Store.getInstance().getLocalPeer().getUsername();
-
                     DFile ratedFile = resultFiles.get(fileName);
                     Rating rating = new Rating();
                     rating.setFileName(fileName);
@@ -606,7 +591,6 @@ class StarRatingsPanel extends JPanel {
                     }
 
                     Store.getInstance().addRating(rating);
-
                     final String ratingJSON = new Gson().toJson(rating);
                     store.getPeerList().forEach(stringPeerEntry -> {
                         String peerIP = stringPeerEntry.getValue().getIp();
