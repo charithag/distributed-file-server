@@ -3,6 +3,7 @@ package org.dc.file.search;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.dc.file.search.Constants.MessageType;
+import org.dc.file.search.dto.Comment;
 import org.dc.file.search.dto.DFile;
 import org.dc.file.search.dto.Peer;
 import org.dc.file.search.dto.Rating;
@@ -166,6 +167,7 @@ public class MessageUtils {
         String[] data = response.split(" ");
         Store store = Store.getInstance();
         Peer peer;
+        Gson gson;
         switch (data[1]) {
             case MessageType.REGOK:
                 addToNeighboursList(data);
@@ -215,22 +217,41 @@ public class MessageUtils {
                 }
                 break;
             case MessageType.RATE:
-                String ratingJSON = response.substring(response.indexOf('{'), response.lastIndexOf('}') + 1);
-                Type listType = new TypeToken<Rating>() {}.getType();
-                Gson gson = new Gson();
-                Rating rating = gson.fromJson(ratingJSON, listType);
+                gson = new Gson();
+                String ratingJson = response.substring(response.indexOf('{'), response.lastIndexOf('}') + 1);
+                Rating rating = gson.fromJson(ratingJson, Rating.class);
                 if (!processedMessages.contains(rating.getRatingId())) {
                     processedMessages.add(rating.getRatingId());
                     store.getPeerList().forEach(stringPeerEntry -> {
-                        String peerIP = stringPeerEntry.getValue().getIp();
-                        int peerPort = stringPeerEntry.getValue().getPort();
+                        Peer destination = stringPeerEntry.getValue();
                         Peer originator = new Peer(username, data[2], Integer.parseInt(data[3]));
-                        MessageUtils.sendUDPMessage(peerIP,
-                                                    peerPort,
-                                                    MessageType.RATE + " " + originator.getIp() + " " +
-                                                    originator.getPort() + " " + ratingJSON);
+                        if (!originator.getKey().equals(destination.getKey())) {
+                            MessageUtils.sendUDPMessage(destination.getIp(),
+                                                        destination.getPort(),
+                                                        MessageType.RATE + " " + originator.getIp() + " " +
+                                                        originator.getPort() + " " + ratingJson);
+                        }
                     });
                     store.addRating(rating);
+                }
+                break;
+            case MessageType.COMMENT:
+                gson = new Gson();
+                String commentJson = response.substring(response.indexOf('{'), response.lastIndexOf('}') + 1);
+                Comment comment = gson.fromJson(commentJson, Comment.class);
+                if (!processedMessages.contains(comment.getCommentId())) {
+                    processedMessages.add(comment.getCommentId());
+                    store.getPeerList().forEach(stringPeerEntry -> {
+                        Peer destination = stringPeerEntry.getValue();
+                        Peer originator = new Peer(username, data[2], Integer.parseInt(data[3]));
+                        if (!originator.getKey().equals(destination.getKey())) {
+                            MessageUtils.sendUDPMessage(destination.getIp(),
+                                                        destination.getPort(),
+                                                        MessageType.COMMENT + " " + originator.getIp() + " " +
+                                                        originator.getPort() + " " + commentJson);
+                        }
+                    });
+                    store.addComment(comment);
                 }
                 break;
             default:

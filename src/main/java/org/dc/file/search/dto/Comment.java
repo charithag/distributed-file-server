@@ -6,6 +6,7 @@ import java.util.List;
 public class Comment {
 
     private String commentId;
+    private String parentId;
     private long lamportTime;
     private String fileName;
     private List<Comment> replies = new ArrayList<>();
@@ -17,6 +18,14 @@ public class Comment {
 
     public void setCommentId(String commentId) {
         this.commentId = commentId;
+    }
+
+    public String getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(String parentId) {
+        this.parentId = parentId;
     }
 
     public long getLamportTime() {

@@ -47,7 +47,7 @@ public class Store {
                 synchronized (LOCK) {
                     final String[] keys = {null};
                     searchRequestMap.entrySet().stream()
-                            .filter(entry -> currentTime > entry.getValue().getTimeStamp() + (10 * 1000)).forEach(entry -> {
+                            .filter(entry -> currentTime > entry.getValue().getTimeStamp() + (5 * 1000)).forEach(entry -> {
                         keys[0] = entry.getKey();
                     });
                     for (String key : keys) {
@@ -55,7 +55,7 @@ public class Store {
                     }
                 }
                 try {
-                    Thread.sleep(10000);
+                    Thread.sleep(4000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -199,4 +199,37 @@ public class Store {
             }
         }
     }
+
+    public void addComment(Comment comment) {
+        if (localFiles.containsKey(comment.getFileName())) {
+            DFile localFile = localFiles.get(comment.getFileName());
+            List<Comment> comments = localFile.getComments();
+            if (comment.getParentId() == null && comment.getParentId().isEmpty()) {
+                for (Comment cmnt : comments) {
+                    if (comment.getCommentId().equals(cmnt.getCommentId())) {
+                        return;
+                    }
+                }
+                comments.add(comment);
+            } else {
+                Comment parentComment = null;
+                for (Comment cmnt : comments) {
+                    if (comment.getParentId().equals(cmnt.getParentId())) {
+                        parentComment = cmnt;
+                        break;
+                    }
+                }
+                if (parentComment != null) {
+                    List<Comment> replies = parentComment.getReplies();
+                    for (Comment cmnt : replies) {
+                        if (comment.getCommentId().equals(cmnt.getCommentId())) {
+                            return;
+                        }
+                    }
+                    replies.add(comment);
+                }
+            }
+        }
+    }
+
 }
