@@ -212,6 +212,8 @@ public class MessageUtils {
                     System.err.println("onError occurred while searching for files. Code: " + resultCode);
                 }
                 break;
+            case MessageType.RATE:
+                System.out.println(data.toString());
             default:
                 System.err.println("Invalid operation");
         }
