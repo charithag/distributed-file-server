@@ -68,6 +68,7 @@ public class DashboardForm extends javax.swing.JFrame {
     private Object[][] data = {};
 
     static volatile Map<String, DFile> resultFiles;
+    public enum StarRatingsType {COMMENT, FILE, DEFAULT};
 
     /**
      * Creates new form DashboardFormNew
@@ -89,8 +90,8 @@ public class DashboardForm extends javax.swing.JFrame {
         tblSearchResults.getColumnModel().getColumn(FILE_COL_INDEX).setPreferredWidth(20);
 
         TableColumn starRatingsColumn = tblSearchResults.getColumnModel().getColumn(STAR_RATINGS_COL_INDEX);
-        starRatingsColumn.setCellRenderer(new StarRatingsRenderer(tblSearchResults));
-        starRatingsColumn.setCellEditor(new StarRatingsEditor(tblSearchResults));
+        starRatingsColumn.setCellRenderer(new StarRatingsRenderer(tblSearchResults, StarRatingsType.FILE));
+        starRatingsColumn.setCellEditor(new StarRatingsEditor(tblSearchResults, StarRatingsType.FILE));
         starRatingsColumn.setPreferredWidth(30);
 
         //Object test[][] = {{"test", new StarRater(5, 2, 1), new JButton("Reply")}};
@@ -99,8 +100,8 @@ public class DashboardForm extends javax.swing.JFrame {
         tblComments.setRowHeight(32);
 
         TableColumn commentRatingColumn = tblComments.getColumnModel().getColumn(COMMENT_RATING_COL_INDEX);
-        commentRatingColumn.setCellRenderer(new StarRatingsRenderer(tblComments));
-        commentRatingColumn.setCellEditor(new StarRatingsEditor(tblComments));
+        commentRatingColumn.setCellRenderer(new StarRatingsRenderer(tblComments, StarRatingsType.COMMENT));
+        commentRatingColumn.setCellEditor(new StarRatingsEditor(tblComments, StarRatingsType.COMMENT));
         commentRatingColumn.setPreferredWidth(30);
 
         TableColumn commentReply = tblComments.getColumnModel().getColumn(COMMENT_REPLY_COL_INDEX);
@@ -392,9 +393,9 @@ public class DashboardForm extends javax.swing.JFrame {
                     Peer peer = searchResult.getPeerWithResults();
                     data[0] = peer.getKey();
                     data[1] = searchResult.getHopCount();
-                    data[3] = new StarRater(5, 2, 1);
                     for (DFile dFile : searchResult.getResults()) {
                         data[2] = dFile.getFileName();
+                        data[3] = new StarRater(5, dFile.getTotalRating(), 0);
                         resultFiles.put(dFile.getFileName(), dFile);
                         model.addRow(data);
                     }
@@ -569,9 +570,7 @@ public class DashboardForm extends javax.swing.JFrame {
 class StarRatingsPanel extends JPanel {
 
     private static String DEFAULT = "0";
-    protected final StarRater starRater = new StarRater(5, 2, 1);
-    protected final int currentRow = 0;
-    protected final int currentColumn = 0;
+    protected volatile StarRater starRater = new StarRater(5, 0, 0);
 
     public StarRatingsPanel() {
         setLayout(new GridLayout());
@@ -622,10 +621,12 @@ class StarRatingsPanel extends JPanel {
         add(starRater);
     }
 
-    public void updateValue(StarRater bt, String fileName) {
+    public void updateValue(StarRater bt, String fileName, String comment, DashboardForm.StarRatingsType type) {
         starRater.setRating(bt.getRating());
         Map<String, Object> properties = new HashMap<>();
         properties.put("fileName", fileName);
+        properties.put("comment", comment);
+        properties.put("type", type);
         starRater.setProperties(properties);
     }
 }
@@ -707,16 +708,22 @@ class ButtonEditor extends DefaultCellEditor {
 class StarRatingsRenderer extends StarRatingsPanel implements TableCellRenderer {
 
     public static final DefaultTableCellRenderer DEFAULT_RENDERER = new DefaultTableCellRenderer();
+    public static final int TYPE_COMMENT = 1;
+    public static final int TYPE_FILE = 2;
+
     private final JTable jTable;
+    private final DashboardForm.StarRatingsType type;
 
     public StarRatingsRenderer() {
         super();
         setName("Table.cellRenderer");
         this.jTable = null;
+        this.type = DashboardForm.StarRatingsType.DEFAULT;
     }
 
-    public StarRatingsRenderer(JTable jTable) {
+    public StarRatingsRenderer(JTable jTable, DashboardForm.StarRatingsType type) {
         this.jTable = jTable;
+        this.type = type;
     }
 
     @Override
@@ -724,10 +731,14 @@ class StarRatingsRenderer extends StarRatingsPanel implements TableCellRenderer 
                                                    int row, int column) {
         setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
         String fileName = "";
+        String comment = "";
         if (jTable != null) {
-            fileName = (String) jTable.getModel().getValueAt(row, FILE_COL_INDEX);
+            fileName = (String) jTable.getModel().getValueAt(row, DashboardForm.FILE_COL_INDEX);
+            if (type == DashboardForm.StarRatingsType.COMMENT) {
+                comment = (String) jTable.getModel().getValueAt(row, DashboardForm.COMMENT_COL_INDEX);
+            }
         }
-        updateValue((StarRater) value, fileName);
+        updateValue((StarRater) value, fileName, comment, type);
         return this;
     }
 }
@@ -735,18 +746,26 @@ class StarRatingsRenderer extends StarRatingsPanel implements TableCellRenderer 
 class StarRatingsEditor extends StarRatingsPanel implements TableCellEditor {
 
     private final JTable jTable;
+    private final DashboardForm.StarRatingsType type;
     protected transient ChangeEvent changeEvent;
 
-    public StarRatingsEditor(JTable jTable) {
+    public StarRatingsEditor(JTable jTable, DashboardForm.StarRatingsType type) {
         this.jTable = jTable;
+        this.type = type;
     }
 
     @Override
     public Component getTableCellEditorComponent(
             JTable table, Object value, boolean isSelected, int row, int column) {
         this.setBackground(table.getSelectionBackground());
-        String fileName = (String) jTable.getModel().getValueAt(row, FILE_COL_INDEX);
-        updateValue((StarRater) value, fileName);
+        String fileName = (String) jTable.getModel().getValueAt(row, DashboardForm.FILE_COL_INDEX);
+
+        String comment = "";
+        if (type == DashboardForm.StarRatingsType.COMMENT) {
+            comment = (String) jTable.getModel().getValueAt(row, DashboardForm.COMMENT_COL_INDEX);
+        }
+        jTable.getModel().setValueAt(value, row, DashboardForm.STAR_RATINGS_COL_INDEX);
+        updateValue((StarRater) value, fileName, comment, type);
         return this;
     }
 
