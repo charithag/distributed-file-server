@@ -33,11 +33,11 @@ public class DFile {
         this.ratings = ratings;
     }
 
-    public int getTotalRating(){
+    public float getTotalRating(){
         if (ratings.isEmpty()) {
             return 0;
         }
-        int total = 0;
+        float total = 0;
         for (Rating rating : ratings) {
             total += rating.getValue();
         }
