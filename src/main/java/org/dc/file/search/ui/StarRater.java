@@ -15,7 +15,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -53,7 +55,8 @@ public class StarRater extends JPanel {
     private int rollover;
     /** True for clicked this time. */
     private boolean done;
-
+    /** The rollover [0, n]. 0 = no rollover. */
+    private Map<String, Object> properties;
 
     /**
      * The constructor.
@@ -94,6 +97,7 @@ public class StarRater extends JPanel {
         this.selection = selection;
         this.rollover = 0;
         this.done = false;
+        this.properties = new HashMap<>();
 
         // set look
         setOpaque(false);
@@ -191,6 +195,14 @@ public class StarRater extends JPanel {
     public void setSelection(int selection) {
         this.selection = selection;
         repaint();
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
     }
 
     /**
