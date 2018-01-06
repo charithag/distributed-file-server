@@ -1,5 +1,7 @@
 package org.dc.file.search;
 
+import org.dc.file.search.dto.Peer;
+
 public class SearchRequest {
 
     private long timeStamp;

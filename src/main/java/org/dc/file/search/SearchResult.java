@@ -1,5 +1,7 @@
 package org.dc.file.search;
 
+import org.dc.file.search.dto.Peer;
+
 import java.util.List;
 
 public class SearchResult {

@@ -7,7 +7,7 @@ package org.dc.file.search.ui;
 
 import org.dc.file.search.Constants.MessageType;
 import org.dc.file.search.MessageUtils;
-import org.dc.file.search.Peer;
+import org.dc.file.search.dto.Peer;
 import org.dc.file.search.SearchRequest;
 import org.dc.file.search.SearchResult;
 import org.dc.file.search.Store;
@@ -97,7 +97,7 @@ public class DashboardForm extends javax.swing.JFrame {
         commentReply.setCellEditor(new ButtonEditor(new JCheckBox()));
 
         Peer localPeer = Store.getInstance().getLocalPeer();
-        setTitle("Dashboard :" + localPeer.getUsername() + "(" + localPeer.getIp() + ":" + localPeer.getPort() + ")");
+        setTitle("Dashboard :" + localPeer.getUsername() + "(" + localPeer.getKey() + ")");
     }
 
     /**
@@ -379,7 +379,7 @@ public class DashboardForm extends javax.swing.JFrame {
                     Object[] data = new Object[MAX_COLS];
                     SearchResult searchResult = searchResults.get(i);
                     Peer peer = searchResult.getPeerWithResults();
-                    data[0] = peer.getIp() + ":" + peer.getPort();
+                    data[0] = peer.getKey();
                     data[1] = searchResult.getHopCount();
                     data[3] = new StarRater(5, 2, 1);
                     for (String fileName : searchResult.getResults()) {

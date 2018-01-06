@@ -5,7 +5,7 @@
  */
 package org.dc.file.search.ui;
 
-import org.dc.file.search.Peer;
+import org.dc.file.search.dto.Peer;
 import org.dc.file.search.Store;
 
 import java.util.Map;

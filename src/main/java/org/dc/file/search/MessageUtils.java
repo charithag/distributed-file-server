@@ -1,6 +1,7 @@
 package org.dc.file.search;
 
 import org.dc.file.search.Constants.MessageType;
+import org.dc.file.search.dto.Peer;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;

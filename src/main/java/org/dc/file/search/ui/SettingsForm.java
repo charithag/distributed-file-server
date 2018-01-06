@@ -11,7 +11,7 @@ import javax.swing.JOptionPane;
 import org.apache.commons.lang.RandomStringUtils;
 import org.dc.file.search.Constants.MessageType;
 import org.dc.file.search.MessageUtils;
-import org.dc.file.search.Peer;
+import org.dc.file.search.dto.Peer;
 import org.dc.file.search.ResponseHandler;
 import org.dc.file.search.Store;
 

@@ -1,4 +1,4 @@
-package org.dc.file.search;
+package org.dc.file.search.dto;
 
 public class Peer {
 
@@ -25,6 +25,6 @@ public class Peer {
     }
 
     public String getKey() {
-        return port + "@" + ip;
+        return ip + ":" + port;
     }
 }
