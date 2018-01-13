@@ -214,7 +214,7 @@ public class Store {
             } else {
                 Comment parentComment = null;
                 for (Comment cmnt : comments) {
-                    if (comment.getParentId().equals(cmnt.getParentId())) {
+                    if (comment.getParentId().equals(cmnt.getCommentId())) {
                         parentComment = cmnt;
                         break;
                     }
