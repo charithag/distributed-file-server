@@ -108,8 +108,8 @@ public class DashboardForm extends javax.swing.JFrame {
         commentRatingColumn.setPreferredWidth(30);
 
         TableColumn commentReply = tblComments.getColumnModel().getColumn(COMMENT_REPLY_COL_INDEX);
-        commentReply.setCellRenderer(new ButtonRenderer(tblSearchResults));
-        commentReply.setCellEditor(new ButtonEditor(tblSearchResults));
+        commentReply.setCellRenderer(new ButtonRenderer(tblComments));
+        commentReply.setCellEditor(new ButtonEditor(tblComments));
     }
 
     private void initSearchResultsTable(){
@@ -140,7 +140,7 @@ public class DashboardForm extends javax.swing.JFrame {
                 data[0] = dFile.getComments().get(i).getCommentId();
                 data[1] = dFile.getComments().get(i).getText();
                 data[2] = new StarRater(5, dFile.getComments().get(i).getTotalRating(), 0);
-                data[3] = new ButtonRenderer(tblSearchResults);
+                data[3] = new ButtonRenderer(tblComments);
                 model.addRow(data);
             }
             tblComments.setModel(model);
@@ -696,31 +696,38 @@ class ButtonPanel extends JPanel {
         this.jTable = jTable;
         setLayout(new GridLayout());
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        Store store = Store.getInstance();
 
-        button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int row = jTable.getSelectedRow();
-                if (row == -1) {
-                    JOptionPane.showMessageDialog(null, "Please select a file first.");
-                    return;
+        button.addActionListener(e -> {
+            int row = jTable.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(null, "Please select a comment first.");
+                return;
+            }
+            String commentId = jTable.getValueAt(jTable.getSelectedRow(), 0).toString();
+            String commentString = JOptionPane.showInputDialog("Add reply for " + commentId);
+            if (commentString != null && !commentString.isEmpty()) {
+                String username = Store.getInstance().getLocalPeer().getUsername();
+                DFile commentedFile = resultFiles.get(selectedFile);
+                List<Comment> comments = commentedFile.getComments();
+                Comment selectedComment = null;
+                for (Comment c : comments) {
+                    if (c.getCommentId().equals(commentId)){
+                        selectedComment = c;
+                        break;
+                    }
                 }
-                String fileName = jTable.getModel().getValueAt(row, 2).toString();
-                String commentString = JOptionPane.showInputDialog("Add comment for " + fileName);
-                if (commentString != null && !commentString.isEmpty()) {
-                    String username = Store.getInstance().getLocalPeer().getUsername();
-                    DFile commentedFile = resultFiles.get(fileName);
-                    Comment comment = new Comment();
-                    comment.setCommentId(RandomStringUtils.randomAlphanumeric(8));
-                    comment.setFileName(fileName);
-                    comment.setUserName(username);
-                    comment.setText(commentString);
 
-                    List<Comment> comments = commentedFile.getComments();
-                    comments.add(comment);
-                    Store.getInstance().addComment(comment);
-                    final String commentJSON = new Gson().toJson(comment);
+                if (selectedComment != null) {
+                    Comment replyComment = new Comment();
+                    replyComment.setCommentId(RandomStringUtils.randomAlphanumeric(8));
+                    replyComment.setFileName(selectedFile);
+                    replyComment.setParentId(commentId);
+                    replyComment.setUserName(username);
+                    replyComment.setText(commentString);
+
+                    selectedComment.getReplies().add(replyComment);
+                    Store.getInstance().addComment(replyComment);
+                    final String commentJSON = new Gson().toJson(replyComment);
                     Store.getInstance().getPeerList().forEach(stringPeerEntry -> {
                         String peerIP = stringPeerEntry.getValue().getIp();
                         int peerPort = stringPeerEntry.getValue().getPort();
@@ -728,7 +735,7 @@ class ButtonPanel extends JPanel {
                         MessageUtils.sendUDPMessage(peerIP,
                                                     peerPort,
                                                     MessageType.COMMENT + " " + localPeer.getIp() + " " +
-                                                            localPeer.getPort() + " " + commentJSON);
+                                                    localPeer.getPort() + " " + commentJSON);
                     });
                 }
             }
