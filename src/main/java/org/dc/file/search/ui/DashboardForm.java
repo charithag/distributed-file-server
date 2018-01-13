@@ -17,17 +17,7 @@ import org.dc.file.search.dto.DFile;
 import org.dc.file.search.dto.Peer;
 import org.dc.file.search.dto.Rating;
 
-import javax.swing.*;
-import javax.swing.event.CellEditorListener;
-import javax.swing.event.ChangeEvent;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.EventObject;
@@ -73,6 +63,8 @@ public class DashboardForm extends javax.swing.JFrame {
 
     private final String[] searchColumnNames = {"Peer", "Hop Count", "File", "Ratings"};
     private final String[] commentColumnNames = {"id", "Comment", "Ratings", "Reply"};
+
+    public static int MAX_RATING = 5;
 
     static volatile Map<String, DFile> resultFiles;
     static volatile String selectedFile = "";
@@ -599,7 +591,7 @@ public class DashboardForm extends javax.swing.JFrame {
 class StarRatingsPanel extends JPanel {
 
     private static String DEFAULT = "0";
-    protected volatile StarRater starRater = new StarRater(5, 0, 0);
+    protected volatile StarRater starRater = new StarRater(DashboardForm.MAX_RATING, 0, 0);
 
     public StarRatingsPanel() {
         setLayout(new GridLayout());
@@ -607,6 +599,9 @@ class StarRatingsPanel extends JPanel {
         Store store = Store.getInstance();
         starRater.addStarListener(
                 selection -> {
+                    if (selection > DashboardForm.MAX_RATING) {
+                        selection = DashboardForm.MAX_RATING;
+                    }
                     Map<String, Object> properties = starRater.getProperties();
                     String fileName = null;
                     String commentId = null;
