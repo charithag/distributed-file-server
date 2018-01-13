@@ -20,6 +20,8 @@ import org.dc.file.search.dto.Rating;
 import javax.swing.*;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
@@ -56,18 +58,17 @@ public class DashboardForm extends javax.swing.JFrame {
     public final static int STAR_RATINGS_COL_INDEX = 3;
 
     public final static int COMMENT_COL_INDEX = 0;
-    public final static int COMMENT_RATING_COL_INDEX = 1;
-    public final static int COMMENT_REPLY_COL_INDEX = 2;
+    public final static int COMMENT_RATING_COL_INDEX = 2;
+    public final static int COMMENT_REPLY_COL_INDEX = 3;
 
     private final static int UUID_LEN = 8;
     private final static int MAX_COLS = 4;
 
     private final String[] searchColumnNames = {"Peer", "Hop Count", "File", "Ratings"};
-    private final String[] commentColumnNames = {"Comment", "Ratings", "Reply"};
-    private Object[][] data = {};
+    private final String[] commentColumnNames = {"id", "Comment", "Ratings", "Reply"};
 
     static volatile Map<String, DFile> resultFiles;
-    public enum StarRatingsType {COMMENT, FILE, DEFAULT};
+    public enum StarRatingsType {COMMENT, FILE, DEFAULT}
 
     /**
      * Creates new form DashboardFormNew
@@ -80,7 +81,32 @@ public class DashboardForm extends javax.swing.JFrame {
         tblSearchResults.setVisible(false);
         progressBar.setVisible(false);
 
-        DefaultTableModel searchModel = new DefaultTableModel(data, searchColumnNames);
+        initSearchResultsTable();
+        initCommentResultsTable();
+
+        Peer localPeer = Store.getInstance().getLocalPeer();
+        setTitle("Dashboard :" + localPeer.getUsername() + "(" + localPeer.getKey() + ")");
+    }
+
+    private void initCommentResultsTable(){
+        Object[][] initData = {};
+        DefaultTableModel commentModel = new DefaultTableModel(initData, commentColumnNames);
+        tblComments.setModel(commentModel);
+        tblComments.setRowHeight(32);
+
+        TableColumn commentRatingColumn = tblComments.getColumnModel().getColumn(COMMENT_RATING_COL_INDEX);
+        commentRatingColumn.setCellRenderer(new StarRatingsRenderer(tblComments, StarRatingsType.COMMENT));
+        commentRatingColumn.setCellEditor(new StarRatingsEditor(tblComments, StarRatingsType.COMMENT));
+        commentRatingColumn.setPreferredWidth(30);
+
+        TableColumn commentReply = tblComments.getColumnModel().getColumn(COMMENT_REPLY_COL_INDEX);
+        commentReply.setCellRenderer(new ButtonRenderer());
+        commentReply.setCellEditor(new ButtonEditor(new JCheckBox()));
+    }
+
+    private void initSearchResultsTable(){
+        Object[][] initData = {};
+        DefaultTableModel searchModel = new DefaultTableModel(initData, searchColumnNames);
         tblSearchResults.setModel(searchModel);
         tblSearchResults.setRowHeight(32);
 
@@ -93,22 +119,24 @@ public class DashboardForm extends javax.swing.JFrame {
         starRatingsColumn.setCellEditor(new StarRatingsEditor(tblSearchResults, StarRatingsType.FILE));
         starRatingsColumn.setPreferredWidth(30);
 
-        //Object test[][] = {{"test", new StarRater(5, 2, 1), new JButton("Reply")}};
-        DefaultTableModel commentModel = new DefaultTableModel(data, commentColumnNames);
-        tblComments.setModel(commentModel);
-        tblComments.setRowHeight(32);
+        tblSearchResults.getSelectionModel().addListSelectionListener(event -> {
+            initCommentResultsTable();
+            DefaultTableModel model = (DefaultTableModel) tblComments.getModel();
+            model.setRowCount(0);
 
-        TableColumn commentRatingColumn = tblComments.getColumnModel().getColumn(COMMENT_RATING_COL_INDEX);
-        commentRatingColumn.setCellRenderer(new StarRatingsRenderer(tblComments, StarRatingsType.COMMENT));
-        commentRatingColumn.setCellEditor(new StarRatingsEditor(tblComments, StarRatingsType.COMMENT));
-        commentRatingColumn.setPreferredWidth(30);
-
-        TableColumn commentReply = tblComments.getColumnModel().getColumn(COMMENT_REPLY_COL_INDEX);
-        commentReply.setCellRenderer(new ButtonRenderer());
-        commentReply.setCellEditor(new ButtonEditor(new JCheckBox()));
-
-        Peer localPeer = Store.getInstance().getLocalPeer();
-        setTitle("Dashboard :" + localPeer.getUsername() + "(" + localPeer.getKey() + ")");
+            String selectedFileName = tblSearchResults.getValueAt(tblSearchResults.getSelectedRow(), FILE_COL_INDEX).toString();
+            DFile commentedFile = resultFiles.get(selectedFileName);
+            for (int i = 0; i < commentedFile.getComments().size(); i++) {
+                Object[] data = new Object[MAX_COLS];
+                data[0] = commentedFile.getComments().get(i).getCommentId();
+                data[1] = commentedFile.getComments().get(i).getText();
+                data[2] = new StarRater(5, commentedFile.getComments().get(i).getTotalRating(), 0);
+                data[3] = new ButtonRenderer();
+                model.addRow(data);
+            }
+            tblComments.setModel(model);
+            model.fireTableDataChanged();
+        });
     }
 
     /**
@@ -237,13 +265,13 @@ public class DashboardForm extends javax.swing.JFrame {
 
         tblComments.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null}
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
             },
             new String [] {
-                "Comment", "Ratings", "Reply"
+                "Id", "Comment", "Ratings", "Reply"
             }
         ));
         jScrollPane3.setViewportView(tblComments);
@@ -382,8 +410,8 @@ public class DashboardForm extends javax.swing.JFrame {
         Runnable resultTask = () -> {
             List<SearchResult> searchResults = Store.getInstance().getSearchResults();
             resultFiles = new HashMap<>();
+            initSearchResultsTable();
             if (searchResults != null) {
-                //                Object[][] data = new Object[searchResults.size()][4];
                 DefaultTableModel model = (DefaultTableModel) tblSearchResults.getModel();
                 model.setRowCount(0);
                 for (int i = 0; i < searchResults.size(); i++) {
@@ -717,9 +745,10 @@ class StarRatingsRenderer extends StarRatingsPanel implements TableCellRenderer 
         String fileName = "";
         String comment = "";
         if (jTable != null) {
-            fileName = (String) jTable.getModel().getValueAt(row, DashboardForm.FILE_COL_INDEX);
             if (type == DashboardForm.StarRatingsType.COMMENT) {
                 comment = (String) jTable.getModel().getValueAt(row, DashboardForm.COMMENT_COL_INDEX);
+            } else {
+                fileName = (String) jTable.getModel().getValueAt(row, DashboardForm.FILE_COL_INDEX);
             }
         }
         updateValue((StarRater) value, fileName, comment, type);
@@ -742,11 +771,12 @@ class StarRatingsEditor extends StarRatingsPanel implements TableCellEditor {
     public Component getTableCellEditorComponent(
             JTable table, Object value, boolean isSelected, int row, int column) {
         this.setBackground(table.getSelectionBackground());
-        String fileName = (String) jTable.getModel().getValueAt(row, DashboardForm.FILE_COL_INDEX);
-
+        String fileName = "";
         String comment = "";
         if (type == DashboardForm.StarRatingsType.COMMENT) {
             comment = (String) jTable.getModel().getValueAt(row, DashboardForm.COMMENT_COL_INDEX);
+        } else {
+            fileName = (String) jTable.getModel().getValueAt(row, DashboardForm.FILE_COL_INDEX);
         }
         jTable.getModel().setValueAt(value, row, DashboardForm.STAR_RATINGS_COL_INDEX);
         updateValue((StarRater) value, fileName, comment, type);
