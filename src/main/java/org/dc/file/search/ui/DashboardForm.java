@@ -20,8 +20,6 @@ import org.dc.file.search.dto.Rating;
 import javax.swing.*;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
@@ -42,6 +40,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static org.dc.file.search.ui.DashboardForm.resultFiles;
+import static org.dc.file.search.ui.DashboardForm.selectedFile;
 
 /**
  * @author rasikaperera
@@ -68,6 +67,7 @@ public class DashboardForm extends javax.swing.JFrame {
     private final String[] commentColumnNames = {"id", "Comment", "Ratings", "Reply"};
 
     static volatile Map<String, DFile> resultFiles;
+    static volatile String selectedFile = "";
     public enum StarRatingsType {COMMENT, FILE, DEFAULT}
 
     /**
@@ -124,13 +124,13 @@ public class DashboardForm extends javax.swing.JFrame {
             DefaultTableModel model = (DefaultTableModel) tblComments.getModel();
             model.setRowCount(0);
 
-            String selectedFileName = tblSearchResults.getValueAt(tblSearchResults.getSelectedRow(), FILE_COL_INDEX).toString();
-            DFile commentedFile = resultFiles.get(selectedFileName);
-            for (int i = 0; i < commentedFile.getComments().size(); i++) {
+            selectedFile = tblSearchResults.getValueAt(tblSearchResults.getSelectedRow(), FILE_COL_INDEX).toString();
+            DFile dFile = resultFiles.get(selectedFile);
+            for (int i = 0; i < dFile.getComments().size(); i++) {
                 Object[] data = new Object[MAX_COLS];
-                data[0] = commentedFile.getComments().get(i).getCommentId();
-                data[1] = commentedFile.getComments().get(i).getText();
-                data[2] = new StarRater(5, commentedFile.getComments().get(i).getTotalRating(), 0);
+                data[0] = dFile.getComments().get(i).getCommentId();
+                data[1] = dFile.getComments().get(i).getText();
+                data[2] = new StarRater(5, dFile.getComments().get(i).getTotalRating(), 0);
                 data[3] = new ButtonRenderer();
                 model.addRow(data);
             }
@@ -594,28 +594,57 @@ class StarRatingsPanel extends JPanel {
                 selection -> {
                     Map<String, Object> properties = starRater.getProperties();
                     String fileName = null;
+                    String commentId = null;
+                    DashboardForm.StarRatingsType type = null;
                     if (properties != null && !properties.isEmpty()) {
                         fileName = (String) properties.get("fileName");
+                        commentId = (String) properties.get("comment");
+                        type = (DashboardForm.StarRatingsType) properties.get("type");
                     }
 
                     String username = Store.getInstance().getLocalPeer().getUsername();
                     DFile ratedFile = resultFiles.get(fileName);
                     Rating rating = new Rating();
                     rating.setFileName(fileName);
+                    rating.setCommentId(commentId);
                     rating.setRatingId(RandomStringUtils.randomAlphanumeric(8));
                     rating.setUserName(username);
                     rating.setValue(selection);
 
-                    List<Rating> fileRatings = ratedFile.getRatings();
-                    boolean isNotRated = true;
-                    for (Rating r :fileRatings) {
-                        if (r.getUserName().equals(username)){
-                            r.setValue(selection);
-                            isNotRated = false;
+                    if (DashboardForm.StarRatingsType.COMMENT == type) {
+                        List<Comment> comments = ratedFile.getComments();
+                        Comment comment = null;
+                        for (Comment c : comments) {
+                            if (c.getCommentId().equals(commentId)) {
+                                comment = c;
+                                break;
+                            }
                         }
-                    }
-                    if (isNotRated) {
-                        fileRatings.add(rating);
+                        if (comment != null) {
+                            List<Rating> commentRatings = comment.getRatings();
+                            boolean isNotRated = true;
+                            for (Rating r : commentRatings) {
+                                if (r.getUserName().equals(username)) {
+                                    r.setValue(selection);
+                                    isNotRated = false;
+                                }
+                            }
+                            if (isNotRated) {
+                                commentRatings.add(rating);
+                            }
+                        }
+                    } else {
+                        List<Rating> fileRatings = ratedFile.getRatings();
+                        boolean isNotRated = true;
+                        for (Rating r : fileRatings) {
+                            if (r.getUserName().equals(username)) {
+                                r.setValue(selection);
+                                isNotRated = false;
+                            }
+                        }
+                        if (isNotRated) {
+                            fileRatings.add(rating);
+                        }
                     }
 
                     Store.getInstance().addRating(rating);
@@ -742,16 +771,17 @@ class StarRatingsRenderer extends StarRatingsPanel implements TableCellRenderer 
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
                                                    int row, int column) {
         setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-        String fileName = "";
-        String comment = "";
         if (jTable != null) {
+            String fileName;
+            String comment = "";
             if (type == DashboardForm.StarRatingsType.COMMENT) {
                 comment = (String) jTable.getModel().getValueAt(row, DashboardForm.COMMENT_COL_INDEX);
+                fileName = selectedFile;
             } else {
                 fileName = (String) jTable.getModel().getValueAt(row, DashboardForm.FILE_COL_INDEX);
             }
+            updateValue((StarRater) value, fileName, comment, type);
         }
-        updateValue((StarRater) value, fileName, comment, type);
         return this;
     }
 }
@@ -771,10 +801,11 @@ class StarRatingsEditor extends StarRatingsPanel implements TableCellEditor {
     public Component getTableCellEditorComponent(
             JTable table, Object value, boolean isSelected, int row, int column) {
         this.setBackground(table.getSelectionBackground());
-        String fileName = "";
+        String fileName;
         String comment = "";
         if (type == DashboardForm.StarRatingsType.COMMENT) {
             comment = (String) jTable.getModel().getValueAt(row, DashboardForm.COMMENT_COL_INDEX);
+            fileName = selectedFile;
         } else {
             fileName = (String) jTable.getModel().getValueAt(row, DashboardForm.FILE_COL_INDEX);
         }
