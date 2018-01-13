@@ -28,14 +28,6 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import javax.swing.*;
-import javax.swing.event.CellEditorListener;
-import javax.swing.event.ChangeEvent;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
 
 import static org.dc.file.search.ui.DashboardForm.resultFiles;
 import static org.dc.file.search.ui.DashboardForm.selectedFile;
@@ -102,6 +94,34 @@ public class DashboardForm extends javax.swing.JFrame {
         TableColumn commentReply = tblComments.getColumnModel().getColumn(COMMENT_REPLY_COL_INDEX);
         commentReply.setCellRenderer(new ButtonRenderer(tblComments));
         commentReply.setCellEditor(new ButtonEditor(tblComments));
+
+        tblComments.getSelectionModel().addListSelectionListener(event -> {
+            if (tblComments.getSelectedRow() < 0) {
+                return;
+            }
+            txtCommentThread.setText("");
+            DFile dFile = resultFiles.get(selectedFile);
+            String commentId = tblComments.getValueAt(tblComments.getSelectedRow(), 0).toString();
+            Comment parentComment = null;
+            List<Comment> comments = dFile.getComments();
+            for (Comment c : comments) {
+                if (c.getCommentId().equals(commentId)) {
+                    parentComment = c;
+                    break;
+                }
+            }
+            if (parentComment == null) {
+                return;
+            }
+            StringBuilder stringBuilder = new StringBuilder();
+            for (Comment replyComment : parentComment.getReplies()) {
+                stringBuilder.append(replyComment.getUserName());
+                stringBuilder.append(": ");
+                stringBuilder.append(replyComment.getText());
+                stringBuilder.append("\n----------------------------------\n");
+            }
+            txtCommentThread.setText(stringBuilder.toString());
+        });
     }
 
     private void initSearchResultsTable(){
