@@ -17,16 +17,6 @@ import org.dc.file.search.dto.DFile;
 import org.dc.file.search.dto.Peer;
 import org.dc.file.search.dto.Rating;
 
-import javax.swing.*;
-import javax.swing.event.CellEditorListener;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -40,6 +30,14 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.swing.*;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 
 import static org.dc.file.search.ui.DashboardForm.resultFiles;
 
@@ -100,8 +98,8 @@ public class DashboardForm extends javax.swing.JFrame {
         commentRatingColumn.setPreferredWidth(30);
 
         TableColumn commentReply = tblComments.getColumnModel().getColumn(COMMENT_REPLY_COL_INDEX);
-        commentReply.setCellRenderer(new ButtonRenderer());
-        commentReply.setCellEditor(new ButtonEditor(new JCheckBox()));
+        commentReply.setCellRenderer(new ButtonRenderer(tblSearchResults));
+        commentReply.setCellEditor(new ButtonEditor(tblSearchResults));
     }
 
     private void initSearchResultsTable(){
@@ -120,6 +118,7 @@ public class DashboardForm extends javax.swing.JFrame {
         starRatingsColumn.setPreferredWidth(30);
 
         tblSearchResults.getSelectionModel().addListSelectionListener(event -> {
+            if(tblSearchResults.getSelectedRow() < 0){return;}
             initCommentResultsTable();
             DefaultTableModel model = (DefaultTableModel) tblComments.getModel();
             model.setRowCount(0);
@@ -131,7 +130,7 @@ public class DashboardForm extends javax.swing.JFrame {
                 data[0] = commentedFile.getComments().get(i).getCommentId();
                 data[1] = commentedFile.getComments().get(i).getText();
                 data[2] = new StarRater(5, commentedFile.getComments().get(i).getTotalRating(), 0);
-                data[3] = new ButtonRenderer();
+                data[3] = new ButtonRenderer(tblSearchResults);
                 model.addRow(data);
             }
             tblComments.setModel(model);
@@ -408,29 +407,34 @@ public class DashboardForm extends javax.swing.JFrame {
                                                 + " \"" + key + "\" 2");
         }
         Runnable resultTask = () -> {
-            List<SearchResult> searchResults = Store.getInstance().getSearchResults();
-            resultFiles = new HashMap<>();
-            initSearchResultsTable();
-            if (searchResults != null) {
-                DefaultTableModel model = (DefaultTableModel) tblSearchResults.getModel();
-                model.setRowCount(0);
-                for (int i = 0; i < searchResults.size(); i++) {
-                    Object[] data = new Object[MAX_COLS];
-                    SearchResult searchResult = searchResults.get(i);
-                    Peer peer = searchResult.getPeerWithResults();
-                    data[0] = peer.getKey();
-                    data[1] = searchResult.getHopCount();
-                    for (DFile dFile : searchResult.getResults()) {
-                        data[2] = dFile.getFileName();
-                        data[3] = new StarRater(5, dFile.getTotalRating(), 0);
-                        resultFiles.put(dFile.getFileName(), dFile);
-                        model.addRow(data);
+            try {
+                List<SearchResult> searchResults = Store.getInstance().getSearchResults();
+                resultFiles = new HashMap<>();
+                initSearchResultsTable();
+                if (searchResults != null) {
+                    DefaultTableModel model = (DefaultTableModel) tblSearchResults.getModel();
+                    model.setRowCount(0);
+                    for (int i = 0; i < searchResults.size(); i++) {
+                        Object[] data = new Object[MAX_COLS];
+                        SearchResult searchResult = searchResults.get(i);
+                        Peer peer = searchResult.getPeerWithResults();
+                        data[0] = peer.getKey();
+                        data[1] = searchResult.getHopCount();
+                        for (DFile dFile : searchResult.getResults()) {
+                            data[2] = dFile.getFileName();
+                            data[3] = new StarRater(5, dFile.getTotalRating(), 0);
+                            resultFiles.put(dFile.getFileName(), dFile);
+                            model.addRow(data);
+                        }
                     }
+                    tblSearchResults.setModel(model);
+                    model.fireTableDataChanged();
                 }
-                tblSearchResults.setModel(model);
-                model.fireTableDataChanged();
+            } catch (Throwable t) {
+                System.out.println(t.getMessage());
+            } finally {
+                btnSearch.setEnabled(true);
             }
-            btnSearch.setEnabled(true);
         };
         btnSearch.setEnabled(false);
         tblSearchResults.setVisible(true);
@@ -643,77 +647,152 @@ class StarRatingsPanel extends JPanel {
     }
 }
 
-class ButtonRenderer extends JButton implements TableCellRenderer {
+class ButtonPanel extends JPanel {
 
-    public ButtonRenderer() {
+    private static String DEFAULT = "0";
+    protected JTable jTable;
+    protected volatile JButton button = new JButton("Comment");
+
+    public ButtonPanel(JTable jTable) {
+        this.jTable = jTable;
+        setLayout(new GridLayout());
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        Store store = Store.getInstance();
+
+        button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int row = jTable.getSelectedRow();
+                if (row == -1) {
+                    JOptionPane.showMessageDialog(null, "Please select a file first.");
+                    return;
+                }
+                String fileName = jTable.getModel().getValueAt(row, 2).toString();
+                String commentString = JOptionPane.showInputDialog("Add comment for " + fileName);
+                if (commentString != null && !commentString.isEmpty()) {
+                    String username = Store.getInstance().getLocalPeer().getUsername();
+                    DFile commentedFile = resultFiles.get(fileName);
+                    Comment comment = new Comment();
+                    comment.setCommentId(RandomStringUtils.randomAlphanumeric(8));
+                    comment.setFileName(fileName);
+                    comment.setUserName(username);
+                    comment.setText(commentString);
+
+                    List<Comment> comments = commentedFile.getComments();
+                    comments.add(comment);
+                    Store.getInstance().addComment(comment);
+                    final String commentJSON = new Gson().toJson(comment);
+                    Store.getInstance().getPeerList().forEach(stringPeerEntry -> {
+                        String peerIP = stringPeerEntry.getValue().getIp();
+                        int peerPort = stringPeerEntry.getValue().getPort();
+                        Peer localPeer = Store.getInstance().getLocalPeer();
+                        MessageUtils.sendUDPMessage(peerIP,
+                                                    peerPort,
+                                                    MessageType.COMMENT + " " + localPeer.getIp() + " " +
+                                                            localPeer.getPort() + " " + commentJSON);
+                    });
+                }
+            }
+        });
+        add(button);
+    }
+}
+
+class ButtonRenderer extends ButtonPanel implements TableCellRenderer {
+
+    public ButtonRenderer(JTable jTable) {
+        super(jTable);
         setOpaque(true);
     }
 
     public Component getTableCellRendererComponent(JTable table, Object value,
                                                    boolean isSelected, boolean hasFocus, int row, int column) {
-        if (isSelected) {
-            setForeground(table.getSelectionForeground());
-            setBackground(table.getSelectionBackground());
-        } else {
-            setForeground(table.getForeground());
-            setBackground(UIManager.getColor("Button.background"));
-        }
-        setText((value == null) ? "" : value.toString());
+        setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
         return this;
     }
 }
 
-class ButtonEditor extends DefaultCellEditor {
-    protected JButton button;
+class ButtonEditor extends ButtonPanel implements TableCellEditor {
+    protected transient ChangeEvent changeEvent;
 
-    private String label;
-
-    private boolean isPushed;
-
-    public ButtonEditor(JCheckBox checkBox) {
-        super(checkBox);
-        button = new JButton();
-        button.setOpaque(true);
-        button.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                fireEditingStopped();
-            }
-        });
+    public ButtonEditor(JTable jTable) {
+        super(jTable);
     }
 
     public Component getTableCellEditorComponent(JTable table, Object value,
                                                  boolean isSelected, int row, int column) {
-        if (isSelected) {
-            button.setForeground(table.getSelectionForeground());
-            button.setBackground(table.getSelectionBackground());
-        } else {
-            button.setForeground(table.getForeground());
-            button.setBackground(table.getBackground());
-        }
-        label = (value == null) ? "" : value.toString();
-        button.setText(label);
-        isPushed = true;
-        return button;
+        this.setBackground(table.getSelectionBackground());
+        return this;
     }
 
     public Object getCellEditorValue() {
-        if (isPushed) {
-            //
-            //
-            JOptionPane.showMessageDialog(button, label + ": Ouch!");
-            // System.out.println(label + ": Ouch!");
-        }
-        isPushed = false;
-        return new String(label);
+        return button;
+    }
+
+    @Override
+    public boolean isCellEditable(EventObject anEvent) {
+        return true;
+    }
+
+    @Override
+    public boolean shouldSelectCell(EventObject anEvent) {
+        return false;
     }
 
     public boolean stopCellEditing() {
-        isPushed = false;
-        return super.stopCellEditing();
+        fireEditingStopped();
+        return true;
+    }
+
+    @Override
+    public void cancelCellEditing() {
+        fireEditingCanceled();
+    }
+
+    @Override
+    public void addCellEditorListener(CellEditorListener l) {
+        listenerList.add(CellEditorListener.class, l);
+    }
+
+    @Override
+    public void removeCellEditorListener(CellEditorListener l) {
+        listenerList.remove(CellEditorListener.class, l);
+    }
+
+    public CellEditorListener[] getCellEditorListeners() {
+        return listenerList.getListeners(CellEditorListener.class);
     }
 
     protected void fireEditingStopped() {
-        super.fireEditingStopped();
+        // Guaranteed to return a non-null array
+        Object[] listeners = listenerList.getListenerList();
+        // Process the listeners last to first, notifying
+        // those that are interested in this event
+        for (int i = listeners.length - 2; i >= 0; i -= 2) {
+            if (listeners[i] == CellEditorListener.class) {
+                // Lazily create the event:
+                if (Objects.isNull(changeEvent)) {
+                    changeEvent = new ChangeEvent(this);
+                }
+                ((CellEditorListener) listeners[i + 1]).editingStopped(changeEvent);
+            }
+        }
+    }
+
+    protected void fireEditingCanceled() {
+        // Guaranteed to return a non-null array
+        Object[] listeners = listenerList.getListenerList();
+        // Process the listeners last to first, notifying
+        // those that are interested in this event
+        for (int i = listeners.length - 2; i >= 0; i -= 2) {
+            if (listeners[i] == CellEditorListener.class) {
+                // Lazily create the event:
+                if (Objects.isNull(changeEvent)) {
+                    changeEvent = new ChangeEvent(this);
+                }
+                ((CellEditorListener) listeners[i + 1]).editingCanceled(changeEvent);
+            }
+        }
     }
 }
 
