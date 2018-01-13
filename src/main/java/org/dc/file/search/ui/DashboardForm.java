@@ -421,6 +421,7 @@ public class DashboardForm extends javax.swing.JFrame {
                 List<SearchResult> searchResults = Store.getInstance().getSearchResults();
                 resultFiles = new HashMap<>();
                 initSearchResultsTable();
+                initCommentResultsTable();
                 if (searchResults != null) {
                     DefaultTableModel model = (DefaultTableModel) tblSearchResults.getModel();
                     model.setRowCount(0);
@@ -491,11 +492,11 @@ public class DashboardForm extends javax.swing.JFrame {
             java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNewCommentActionPerformed
         int row = tblSearchResults.getSelectedRow();
         if (row == -1) {
-            JOptionPane.showMessageDialog(null, "Please select a file first.");
+            JOptionPane.showMessageDialog(null, "Please select a file first.", "Information", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
         String fileName = tblSearchResults.getModel().getValueAt(row, 2).toString();
-        String commentString = JOptionPane.showInputDialog("Add comment for " + fileName);
+        String commentString = JOptionPane.showInputDialog("Add comment for " + fileName, JOptionPane.QUESTION_MESSAGE);
         if (commentString != null && !commentString.isEmpty()) {
             String username = Store.getInstance().getLocalPeer().getUsername();
             DFile commentedFile = resultFiles.get(fileName);
@@ -700,11 +701,11 @@ class ButtonPanel extends JPanel {
         button.addActionListener(e -> {
             int row = jTable.getSelectedRow();
             if (row == -1) {
-                JOptionPane.showMessageDialog(null, "Please select a comment first.");
+                JOptionPane.showMessageDialog(null, "Please select a comment first.", "Information", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
             String commentId = jTable.getValueAt(jTable.getSelectedRow(), 0).toString();
-            String commentString = JOptionPane.showInputDialog("Add reply for " + commentId);
+            String commentString = JOptionPane.showInputDialog(null, "Add reply for " + commentId, "Add a new Reply", JOptionPane.QUESTION_MESSAGE);
             if (commentString != null && !commentString.isEmpty()) {
                 String username = Store.getInstance().getLocalPeer().getUsername();
                 DFile commentedFile = resultFiles.get(selectedFile);
