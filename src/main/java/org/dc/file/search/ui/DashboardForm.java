@@ -438,7 +438,6 @@ public class DashboardForm extends javax.swing.JFrame {
             try {
                 List<SearchResult> searchResults = Store.getInstance().getSearchResults();
                 resultFiles = new HashMap<>();
-                initSearchResultsTable();
                 if (searchResults != null) {
                     DefaultTableModel model = (DefaultTableModel) tblSearchResults.getModel();
                     model.setRowCount(0);
@@ -464,6 +463,8 @@ public class DashboardForm extends javax.swing.JFrame {
                 btnSearch.setEnabled(true);
             }
         };
+        initSearchResultsTable();
+        initCommentResultsTable();
         btnSearch.setEnabled(false);
         tblSearchResults.setVisible(true);
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -509,11 +510,11 @@ public class DashboardForm extends javax.swing.JFrame {
             java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNewCommentActionPerformed
         int row = tblSearchResults.getSelectedRow();
         if (row == -1) {
-            JOptionPane.showMessageDialog(null, "Please select a file first.");
+            JOptionPane.showMessageDialog(this, "Please select a file first.", "Information", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
         String fileName = tblSearchResults.getModel().getValueAt(row, 2).toString();
-        String commentString = JOptionPane.showInputDialog("Add comment for " + fileName);
+        String commentString = JOptionPane.showInputDialog(null, "Add comment for " + fileName, "Add A New Comment", JOptionPane.QUESTION_MESSAGE);
         if (commentString != null && !commentString.isEmpty()) {
             String username = Store.getInstance().getLocalPeer().getUsername();
             DFile commentedFile = resultFiles.get(fileName);
@@ -708,7 +709,7 @@ class ButtonPanel extends JPanel {
 
     private static String DEFAULT = "0";
     protected JTable jTable;
-    protected volatile JButton button = new JButton("Comment");
+    protected volatile JButton button = new JButton("Reply");
 
     public ButtonPanel(JTable jTable) {
         this.jTable = jTable;
@@ -718,11 +719,11 @@ class ButtonPanel extends JPanel {
         button.addActionListener(e -> {
             int row = jTable.getSelectedRow();
             if (row == -1) {
-                JOptionPane.showMessageDialog(null, "Please select a comment first.");
+                JOptionPane.showMessageDialog(this, "Please select a comment first.", "Information", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
             String commentId = jTable.getValueAt(jTable.getSelectedRow(), 0).toString();
-            String commentString = JOptionPane.showInputDialog("Add reply for " + commentId);
+            String commentString = JOptionPane.showInputDialog(null, "Add reply for " + commentId, "Add A New Reply", JOptionPane.QUESTION_MESSAGE);
             if (commentString != null && !commentString.isEmpty()) {
                 String username = Store.getInstance().getLocalPeer().getUsername();
                 DFile commentedFile = resultFiles.get(selectedFile);
