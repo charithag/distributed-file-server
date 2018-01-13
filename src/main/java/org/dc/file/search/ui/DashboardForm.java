@@ -17,6 +17,14 @@ import org.dc.file.search.dto.DFile;
 import org.dc.file.search.dto.Peer;
 import org.dc.file.search.dto.Rating;
 
+import javax.swing.*;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -28,15 +36,6 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import javax.swing.*;
-import javax.swing.event.CellEditorListener;
-import javax.swing.event.ChangeEvent;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
 
 import static org.dc.file.search.ui.DashboardForm.resultFiles;
 import static org.dc.file.search.ui.DashboardForm.selectedFile;
@@ -90,6 +89,7 @@ public class DashboardForm extends javax.swing.JFrame {
     }
 
     private void initCommentResultsTable(){
+        txtCommentThread.setText("");
         Object[][] initData = {};
         DefaultTableModel commentModel = new DefaultTableModel(initData, commentColumnNames);
         tblComments.setModel(commentModel);
@@ -105,31 +105,30 @@ public class DashboardForm extends javax.swing.JFrame {
         commentReply.setCellEditor(new ButtonEditor(tblComments));
 
         tblComments.getSelectionModel().addListSelectionListener(event -> {
-            if (tblComments.getSelectedRow() < 0) {
-                return;
-            }
-            txtCommentThread.setText("");
-            DFile dFile = resultFiles.get(selectedFile);
-            String commentId = tblComments.getValueAt(tblComments.getSelectedRow(), 0).toString();
-            Comment parentComment = null;
-            List<Comment> comments = dFile.getComments();
-            for (Comment c : comments) {
-                if (c.getCommentId().equals(commentId)) {
-                    parentComment = c;
-                    break;
+            if (tblComments.getSelectedRow() >= 0) {
+                txtCommentThread.setText("");
+                DFile dFile = resultFiles.get(selectedFile);
+                String commentId = tblComments.getValueAt(tblComments.getSelectedRow(), 0).toString();
+                Comment parentComment = null;
+                List<Comment> comments = dFile.getComments();
+                for (Comment c : comments) {
+                    if (c.getCommentId().equals(commentId)) {
+                        parentComment = c;
+                        break;
+                    }
                 }
+                if (parentComment == null) {
+                    return;
+                }
+                StringBuilder stringBuilder = new StringBuilder();
+                for (Comment replyComment : parentComment.getReplies()) {
+                    stringBuilder.append(replyComment.getUserName());
+                    stringBuilder.append(": ");
+                    stringBuilder.append(replyComment.getText());
+                    stringBuilder.append("\n----------------------------------\n");
+                }
+                txtCommentThread.setText(stringBuilder.toString());
             }
-            if (parentComment == null) {
-                return;
-            }
-            StringBuilder stringBuilder = new StringBuilder();
-            for (Comment replyComment : parentComment.getReplies()) {
-                stringBuilder.append(replyComment.getUserName());
-                stringBuilder.append(": ");
-                stringBuilder.append(replyComment.getText());
-                stringBuilder.append("\n----------------------------------\n");
-            }
-            txtCommentThread.setText(stringBuilder.toString());
         });
     }
 
@@ -149,24 +148,29 @@ public class DashboardForm extends javax.swing.JFrame {
         starRatingsColumn.setPreferredWidth(30);
 
         tblSearchResults.getSelectionModel().addListSelectionListener(event -> {
-            if(tblSearchResults.getSelectedRow() < 0){return;}
-            initCommentResultsTable();
-            DefaultTableModel model = (DefaultTableModel) tblComments.getModel();
-            model.setRowCount(0);
-
-            selectedFile = tblSearchResults.getValueAt(tblSearchResults.getSelectedRow(), FILE_COL_INDEX).toString();
-            DFile dFile = resultFiles.get(selectedFile);
-            for (int i = 0; i < dFile.getComments().size(); i++) {
-                Object[] data = new Object[MAX_COLS];
-                data[0] = dFile.getComments().get(i).getCommentId();
-                data[1] = dFile.getComments().get(i).getText();
-                data[2] = new StarRater(5, dFile.getComments().get(i).getTotalRating(), 0);
-                data[3] = new ButtonRenderer(tblComments);
-                model.addRow(data);
+            if (tblSearchResults.getSelectedRow() >= 0) {
+                updateCommentTable();
             }
-            tblComments.setModel(model);
-            model.fireTableDataChanged();
         });
+    }
+
+    private void updateCommentTable() {
+        initCommentResultsTable();
+        DefaultTableModel model = (DefaultTableModel) tblComments.getModel();
+        model.setRowCount(0);
+
+        selectedFile = tblSearchResults.getValueAt(tblSearchResults.getSelectedRow(), FILE_COL_INDEX).toString();
+        DFile dFile = resultFiles.get(selectedFile);
+        for (int i = 0; i < dFile.getComments().size(); i++) {
+            Object[] data = new Object[MAX_COLS];
+            data[0] = dFile.getComments().get(i).getCommentId();
+            data[1] = dFile.getComments().get(i).getText();
+            data[2] = new StarRater(5, dFile.getComments().get(i).getTotalRating(), 0);
+            data[3] = new ButtonRenderer(tblComments);
+            model.addRow(data);
+        }
+        tblComments.setModel(model);
+        model.fireTableDataChanged();
     }
 
     /**
@@ -541,6 +545,9 @@ public class DashboardForm extends javax.swing.JFrame {
                                             MessageType.COMMENT + " " + localPeer.getIp() + " " +
                                             localPeer.getPort() + " " + commentJSON);
             });
+
+            //Update comments table again
+            updateCommentTable();
         }
     }//GEN-LAST:event_btnNewCommentActionPerformed
 
